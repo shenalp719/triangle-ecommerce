@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Canva-like Mug Customizer - Fabric.js + Three.js Example</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        header p {
+            font-size: 1rem;
+            opacity: 0.9;
+        }
+
+        .workspace {
+            display: grid;
+            grid-template-columns: 600px 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 1200px) {
+            .workspace {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* 2D DESIGN PANEL */
+        .design-panel {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .design-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .design-header small {
+            display: block;
+            font-size: 0.8rem;
+            opacity: 0.8;
+            margin-top: 5px;
+            font-weight: normal;
+        }
+
+        #fabric-canvas {
+            border: 2px solid #ddd;
+            background: white;
+            cursor: crosshair;
+            display: block;
+            margin: 15px;
+            border-radius: 5px;
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .tools {
+            padding: 15px;
+            border-top: 1px solid #eee;
+            background: #fafafa;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .tool-section {
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .tool-section:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+
+        .tool-label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #333;
+            font-size: 0.9rem;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 8px;
+        }
+
+        input[type="text"],
+        input[type="file"],
+        select {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 0.9rem;
+            font-family: inherit;
+        }
+
+        input[type="text"]:focus,
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        input[type="color"] {
+            width: 50px;
+            height: 35px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            cursor: pointer;
+        }
+
+        .range-value {
+            font-size: 0.85rem;
+            color: #666;
+            margin-top: 4px;
+        }
+
+        button {
+            padding: 8px 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button.secondary {
+            background: #6c757d;
+            flex: 1;
+        }
+
+        button.secondary:hover {
+            box-shadow: 0 5px 20px rgba(108, 117, 125, 0.4);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 8px;
+        }
+
+        .color-palette {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+        }
+
+        .color-btn {
+            width: 100%;
+            aspect-ratio: 1;
+            border: 2px solid transparent;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .color-btn:hover {
+            transform: scale(1.05);
+        }
+
+        .color-btn.active {
+            border-color: #333;
+            box-shadow: 0 0 0 2px white, 0 0 0 4px #333;
+        }
+
+        /* 3D PREVIEW PANEL */
+        .preview-panel {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .preview-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .preview-header small {
+            display: block;
+            font-size: 0.8rem;
+            opacity: 0.8;
+            margin-top: 5px;
+            font-weight: normal;
+        }
+
+        #three-canvas {
+            flex: 1;
+            display: block;
+            min-height: 500px;
+            background: linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%);
+        }
+
+        /* INFO BOX */
+        .info-box {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .info-box h3 {
+            margin-bottom: 10px;
+            color: #667eea;
+        }
+
+        .info-box ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .info-box li {
+            margin-bottom: 8px;
+            padding-left: 20px;
+            position: relative;
+        }
+
+        .info-box li:before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        @media print {
+            body {
+                background: white;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header>
+            <h1>🎨 Advanced Mug Customizer</h1>
+            <p>Fabric.js + Three.js Integration - Drag, Resize, Rotate Like Canva!</p>
+        </header>
+
+        <!-- Info Box -->
+        <div class="info-box">
+            <h3>How to Use:</h3>
+            <ul>
+                <li><strong>Add Text:</strong> Enter text and click "Add Text"</li>
+                <li><strong>Add Image:</strong> Upload an image file</li>
+                <li><strong>Edit:</strong> Click elements to select, then drag/resize/rotate</li>
+                <li><strong>Arrange:</strong> Use Forward/Backward buttons to layer elements</li>
+                <li><strong>Preview:</strong> See real-time updates on the 3D mug on the right</li>
+                <li><strong>3D Control:</strong> Drag the mug to rotate, scroll to zoom</li>
+            </ul>
+        </div>
+
+        <!-- Main Workspace -->
+        <div class="workspace">
+            <!-- 2D Design Panel -->
+            <div class="design-panel">
+                <div class="design-header">
+                    2D Design Editor
+                    <small>Drag, resize, rotate - click elements to select them</small>
+                </div>
+
+                <canvas id="fabric-canvas" width="600" height="600"></canvas>
+
+                <div class="tools">
+                    <!-- Add Text -->
+                    <div class="tool-section">
+                        <label class="tool-label">Add Text</label>
+                        <div class="input-group">
+                            <input type="text" id="text-input" placeholder="Enter your text...">
+                            <button id="add-text-btn" style="flex: 0 0 auto;">Add</button>
+                        </div>
+                    </div>
+
+                    <!-- Add Image -->
+                    <div class="tool-section">
+                        <label class="tool-label">Add Image</label>
+                        <input type="file" id="image-upload" accept="image/*">
+                    </div>
+
+                    <!-- Font Size -->
+                    <div class="tool-section">
+                        <label class="tool-label">Font Size</label>
+                        <input type="range" id="font-size" min="10" max="100" value="40">
+                        <div class="range-value"><span id="font-size-display">40</span>px</div>
+                    </div>
+
+                    <!-- Font Color -->
+                    <div class="tool-section">
+                        <label class="tool-label">Text Color</label>
+                        <input type="color" id="font-color" value="#000000">
+                    </div>
+
+                    <!-- Font Family -->
+                    <div class="tool-section">
+                        <label class="tool-label">Font Family</label>
+                        <select id="font-family">
+                            <option value="Arial">Arial</option>
+                            <option value="Helvetica">Helvetica</option>
+                            <option value="Georgia">Georgia</option>
+                            <option value="Courier New">Courier New</option>
+                            <option value="Verdana">Verdana</option>
+                        </select>
+                    </div>
+
+                    <!-- Layer Controls -->
+                    <div class="tool-section">
+                        <label class="tool-label">Layer Controls</label>
+                        <div class="button-group">
+                            <button class="secondary" id="delete-layer">Delete</button>
+                            <button class="secondary" id="forward-layer">Forward</button>
+                            <button class="secondary" id="backward-layer">Back</button>
+                        </div>
+                    </div>
+
+                    <!-- Mug Color -->
+                    <div class="tool-section">
+                        <label class="tool-label">Mug Color</label>
+                        <div class="color-palette">
+                            <button class="color-btn active" data-color="#FFFFFF" style="background: #FFFFFF; border: 2px solid #999;" title="White"></button>
+                            <button class="color-btn" data-color="#000000" style="background: #000000;" title="Black"></button>
+                            <button class="color-btn" data-color="#E31E24" style="background: #E31E24;" title="Red"></button>
+                            <button class="color-btn" data-color="#0066CC" style="background: #0066CC;" title="Blue"></button>
+                            <button class="color-btn" data-color="#00AA00" style="background: #00AA00;" title="Green"></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3D Preview Panel -->
+            <div class="preview-panel">
+                <div class="preview-header">
+                    3D Mug Preview
+                    <small>Drag to rotate • Scroll to zoom</small>
+                </div>
+                <canvas id="three-canvas"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Load Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <script>
+        // ============================================================================
+        // STATE MANAGEMENT
+        // ============================================================================
+        const state = {
+            // Fabric.js
+            fabricCanvas: null,
+            
+            // Three.js
+            threeScene: null,
+            threeCamera: null,
+            threeRenderer: null,
+            mug: null,
+            productMesh: null,
+            
+            // Product
+            currentColor: '#FFFFFF',
+            
+            // Interaction
+            isDragging: false,
+            mugRotation: { x: 0, y: 0 },
+            prevMousePos: { x: 0, y: 0 },
+            zoom: 1
+        };
+
+        // ============================================================================
+        // FABRIC.JS SETUP
+        // ============================================================================
+        function initFabricCanvas() {
+            state.fabricCanvas = new fabric.Canvas('fabric-canvas', {
+                width: 600,
+                height: 600,
+                backgroundColor: '#ffffff',
+                selection: true,
+                preserveObjectStacking: true
+            });
+
+            // Auto-update texture on any change
+            state.fabricCanvas.on('object:added', syncTexture);
+            state.fabricCanvas.on('object:modified', syncTexture);
+            state.fabricCanvas.on('object:removed', syncTexture);
+            state.fabricCanvas.on('object:moving', syncTexture);
+            state.fabricCanvas.on('object:scaling', syncTexture);
+            state.fabricCanvas.on('object:rotating', syncTexture);
+        }
+
+        // ============================================================================
+        // ADD TEXT
+        // ============================================================================
+        function addTextToCanvas() {
+            const text = document.getElementById('text-input').value.trim();
+            if (!text) {
+                alert('Please enter text');
+                return;
+            }
+
+            const fontSize = parseInt(document.getElementById('font-size').value);
+            const fontFamily = document.getElementById('font-family').value;
+            const color = document.getElementById('font-color').value;
+
+            const fabricText = new fabric.Text(text, {
+                left: 300,
+                top: 300,
+                fontSize: fontSize,
+                fontFamily: fontFamily,
+                fill: color,
+                originX: 'center',
+                originY: 'center'
+            });
+
+            state.fabricCanvas.add(fabricText);
+            state.fabricCanvas.setActiveObject(fabricText);
+            state.fabricCanvas.renderAll();
+            document.getElementById('text-input').value = '';
+        }
+
+        // ============================================================================
+        // ADD IMAGE
+        // ============================================================================
+        function handleImageUpload(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                fabric.Image.fromURL(event.target.result, (img) => {
+                    const scale = Math.min(
+                        (600 * 0.5) / img.width,
+                        (600 * 0.5) / img.height
+                    );
+
+                    img.scale(scale);
+                    img.set({
+                        left: 300,
+                        top: 300,
+                        originX: 'center',
+                        originY: 'center'
+                    });
+
+                    state.fabricCanvas.add(img);
+                    state.fabricCanvas.setActiveObject(img);
+                    state.fabricCanvas.renderAll();
+                });
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // ============================================================================
+        // SYNC FABRIC CANVAS → THREE.JS TEXTURE
+        // ============================================================================
+        function syncTexture() {
+            if (!state.fabricCanvas || !state.productMesh) return;
+
+            const fabricData = state.fabricCanvas.toDataURL({
+                format: 'png',
+                quality: 1,
+                multiplier: 2
+            });
+
+            const img = new Image();
+            img.onload = function() {
+                const canvas = document.createElement('canvas');
+                canvas.width = 1024;
+                canvas.height = 1024;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, 1024, 1024);
+
+                const texture = new THREE.CanvasTexture(canvas);
+                state.productMesh.material.map = texture;
+                state.productMesh.material.color.set('#ffffff');
+                state.productMesh.material.needsUpdate = true;
+            };
+            img.src = fabricData;
+        }
+
+        // ============================================================================
+        // LAYER CONTROLS
+        // ============================================================================
+        document.getElementById('delete-layer')?.addEventListener('click', () => {
+            const active = state.fabricCanvas.getActiveObject();
+            if (!active) {
+                alert('Select an object to delete');
+                return;
+            }
+            state.fabricCanvas.remove(active);
+            state.fabricCanvas.renderAll();
+            syncTexture();
+        });
+
+        document.getElementById('forward-layer')?.addEventListener('click', () => {
+            const active = state.fabricCanvas.getActiveObject();
+            if (active) {
+                state.fabricCanvas.bringForward(active);
+                state.fabricCanvas.renderAll();
+                syncTexture();
+            }
+        });
+
+        document.getElementById('backward-layer')?.addEventListener('click', () => {
+            const active = state.fabricCanvas.getActiveObject();
+            if (active) {
+                state.fabricCanvas.sendBackwards(active);
+                state.fabricCanvas.renderAll();
+                syncTexture();
+            }
+        });
+
+        // ============================================================================
+        // FONT SIZE UPDATE
+        // ============================================================================
+        document.getElementById('font-size')?.addEventListener('input', (e) => {
+            document.getElementById('font-size-display').textContent = e.target.value;
+            const active = state.fabricCanvas?.getActiveObject();
+            if (active && active instanceof fabric.Text) {
+                active.set({ fontSize: parseInt(e.target.value) });
+                state.fabricCanvas.renderAll();
+                syncTexture();
+            }
+        });
+
+        // ============================================================================
+        // FONT COLOR UPDATE
+        // ============================================================================
+        document.getElementById('font-color')?.addEventListener('change', (e) => {
+            const active = state.fabricCanvas?.getActiveObject();
+            if (active && active instanceof fabric.Text) {
+                active.set({ fill: e.target.value });
+                state.fabricCanvas.renderAll();
+                syncTexture();
+            }
+        });
+
+        // ============================================================================
+        // FONT FAMILY UPDATE
+        // ============================================================================
+        document.getElementById('font-family')?.addEventListener('change', (e) => {
+            const active = state.fabricCanvas?.getActiveObject();
+            if (active && active instanceof fabric.Text) {
+                active.set({ fontFamily: e.target.value });
+                state.fabricCanvas.renderAll();
+                syncTexture();
+            }
+        });
+
+        // ============================================================================
+        // EVENT LISTENERS
+        // ============================================================================
+        document.getElementById('add-text-btn')?.addEventListener('click', addTextToCanvas);
+        document.getElementById('image-upload')?.addEventListener('change', handleImageUpload);
+
+        document.getElementById('text-input')?.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') addTextToCanvas();
+        });
+
+        // ============================================================================
+        // THREE.JS SETUP
+        // ============================================================================
+        function initThreeScene() {
+            const container = document.getElementById('three-canvas');
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+
+            // Scene
+            state.threeScene = new THREE.Scene();
+            state.threeScene.background = new THREE.Color(0xf5f5f5);
+
+            // Camera
+            state.threeCamera = new THREE.PerspectiveCamera(60, width / height, 0.1, 1000);
+            state.threeCamera.position.set(0, 0.3, 3.2);
+            state.threeCamera.lookAt(0, 0, 0);
+
+            // Renderer
+            state.threeRenderer = new THREE.WebGLRenderer({
+                canvas: container,
+                antialias: true,
+                powerPreference: 'high-performance'
+            });
+            state.threeRenderer.setSize(width, height);
+            state.threeRenderer.setPixelRatio(window.devicePixelRatio);
+            state.threeRenderer.shadowMap.enabled = true;
+
+            // Lighting
+            const ambient = new THREE.AmbientLight(0xffffff, 0.5);
+            state.threeScene.add(ambient);
+
+            const directional = new THREE.DirectionalLight(0xffffff, 1);
+            directional.position.set(4, 6, 5);
+            directional.castShadow = true;
+            directional.shadow.mapSize.width = 2048;
+            directional.shadow.mapSize.height = 2048;
+            state.threeScene.add(directional);
+
+            const fill = new THREE.DirectionalLight(0xffffff, 0.4);
+            fill.position.set(-3, 2, -4);
+            state.threeScene.add(fill);
+
+            // Create mug
+            createMug();
+
+            // Mouse controls
+            setupMouseControls();
+
+            // Animation loop
+            animate();
+
+            // Handle resize
+            window.addEventListener('resize', () => {
+                const w = container.clientWidth;
+                const h = container.clientHeight;
+                state.threeCamera.aspect = w / h;
+                state.threeCamera.updateProjectionMatrix();
+                state.threeRenderer.setSize(w, h);
+            });
+        }
+
+        // ============================================================================
+        // CREATE MUG
+        // ============================================================================
+        function createMug() {
+            const group = new THREE.Group();
+
+            const material = new THREE.MeshStandardMaterial({
+                color: state.currentColor,
+                roughness: 0.4,
+                metalness: 0.05
+            });
+
+            // Body
+            const bodyGeom = new THREE.CylinderGeometry(0.7, 0.65, 1.2, 128, 32, true);
+            const body = new THREE.Mesh(bodyGeom, material);
+            body.castShadow = true;
+            body.receiveShadow = true;
+            group.add(body);
+
+            // Rim
+            const rimGeom = new THREE.TorusGeometry(0.72, 0.035, 20, 128);
+            const rim = new THREE.Mesh(rimGeom, material);
+            rim.position.y = 0.65;
+            rim.rotation.x = Math.PI / 2;
+            rim.castShadow = true;
+            group.add(rim);
+
+            // Bottom
+            const bottomGeom = new THREE.CylinderGeometry(0.65, 0.62, 0.08, 128);
+            const bottom = new THREE.Mesh(bottomGeom, material);
+            bottom.position.y = -0.62;
+            bottom.castShadow = true;
+            group.add(bottom);
+
+            // Handle
+            const curve = new THREE.CatmullRomCurve3([
+                new THREE.Vector3(0.65, 0.2, 0),
+                new THREE.Vector3(0.85, 0.35, 0),
+                new THREE.Vector3(0.95, 0.5, 0),
+                new THREE.Vector3(0.9, 0.65, 0),
+                new THREE.Vector3(0.75, 0.75, 0),
+                new THREE.Vector3(0.55, 0.65, 0)
+            ]);
+            const tubeGeom = new THREE.TubeGeometry(curve, 20, 0.08, 12, false);
+            const handle = new THREE.Mesh(tubeGeom, material);
+            handle.castShadow = true;
+            group.add(handle);
+
+            state.productMesh = body;
+            state.mug = group;
+            state.threeScene.add(group);
+
+            group.rotation.x = 0.15;
+            group.rotation.y = -0.35;
+        }
+
+        // ============================================================================
+        // CHANGE MUG COLOR
+        // ============================================================================
+        function changeMugColor(color) {
+            state.currentColor = color;
+            state.mug.traverse((child) => {
+                if (child.isMesh) {
+                    child.material.color.set(color);
+                }
+            });
+        }
+
+        // Color buttons
+        document.querySelectorAll('.color-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const color = btn.dataset.color;
+                changeMugColor(color);
+
+                document.querySelectorAll('.color-btn').forEach(b => {
+                    b.classList.remove('active');
+                });
+                btn.classList.add('active');
+            });
+        });
+
+        // ============================================================================
+        // MOUSE CONTROLS FOR 3D
+        // ============================================================================
+        function setupMouseControls() {
+            const canvas = state.threeRenderer.domElement;
+
+            canvas.addEventListener('mousedown', (e) => {
+                state.isDragging = true;
+                state.prevMousePos = { x: e.clientX, y: e.clientY };
+            });
+
+            canvas.addEventListener('mousemove', (e) => {
+                if (!state.isDragging || !state.mug) return;
+
+                const deltaX = e.clientX - state.prevMousePos.x;
+                const deltaY = e.clientY - state.prevMousePos.y;
+
+                state.mugRotation.y += deltaX * 0.005;
+                state.mugRotation.x += deltaY * 0.005;
+
+                state.mug.rotation.y = state.mugRotation.y;
+                state.mug.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, state.mugRotation.x));
+
+                state.prevMousePos = { x: e.clientX, y: e.clientY };
+            });
+
+            canvas.addEventListener('mouseup', () => {
+                state.isDragging = false;
+            });
+
+            canvas.addEventListener('mouseleave', () => {
+                state.isDragging = false;
+            });
+
+            // Zoom
+            canvas.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                state.zoom += (e.deltaY < 0 ? 0.1 : -0.1);
+                state.zoom = Math.max(0.5, Math.min(3, state.zoom));
+                state.threeCamera.position.z = 3.2 / state.zoom;
+            }, { passive: false });
+        }
+
+        // ============================================================================
+        // ANIMATION LOOP
+        // ============================================================================
+        function animate() {
+            requestAnimationFrame(animate);
+
+            if (!state.isDragging && state.mug) {
+                state.mug.rotation.y += 0.002;
+            }
+
+            state.threeRenderer.render(state.threeScene, state.threeCamera);
+        }
+
+        // ============================================================================
+        // INITIALIZATION
+        // ============================================================================
+        window.addEventListener('DOMContentLoaded', () => {
+            initFabricCanvas();
+            initThreeScene();
+            syncTexture();
+        });
+    </script>
+</body>
+</html>
