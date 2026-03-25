@@ -242,10 +242,11 @@ include 'includes/header.php';
             const height = container.clientHeight;
 
             customizer.scene = new THREE.Scene();
-            customizer.scene.background = new THREE.Color(0xf5f5f5);
+            customizer.scene.background = new THREE.Color(0xf8f8f8);
 
-            customizer.camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
-            customizer.camera.position.z = 4;
+            customizer.camera = new THREE.PerspectiveCamera(60, width / height, 0.1, 1000);
+            customizer.camera.position.set(0, 0.3, 3.2);
+            customizer.camera.lookAt(0, 0, 0);
 
             customizer.renderer = new THREE.WebGLRenderer({ 
                 canvas: document.getElementById('preview-canvas'), 
@@ -254,19 +255,38 @@ include 'includes/header.php';
             });
             customizer.renderer.setSize(width, height);
             customizer.renderer.setPixelRatio(window.devicePixelRatio);
+            customizer.renderer.shadowMap.enabled = true;
+            customizer.renderer.shadowMap.type = THREE.PCFShadowShadowMap;
+            customizer.renderer.toneMappingExposure = 1;
 
-            // Lighting setup
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+            // Enhanced lighting setup for photorealism
+            // Ambient light - soft overall illumination
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
             customizer.scene.add(ambientLight);
 
-            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-            directionalLight.position.set(5, 10, 7);
-            directionalLight.castShadow = true;
-            customizer.scene.add(directionalLight);
+            // Key light - main directional light with shadows
+            const keyLight = new THREE.DirectionalLight(0xffffff, 1);
+            keyLight.position.set(4, 6, 5);
+            keyLight.castShadow = true;
+            keyLight.shadow.mapSize.width = 2048;
+            keyLight.shadow.mapSize.height = 2048;
+            keyLight.shadow.camera.left = -5;
+            keyLight.shadow.camera.right = 5;
+            keyLight.shadow.camera.top = 5;
+            keyLight.shadow.camera.bottom = -5;
+            keyLight.shadow.camera.near = 0.5;
+            keyLight.shadow.camera.far = 50;
+            customizer.scene.add(keyLight);
 
-            const fillLight = new THREE.DirectionalLight(0xffffff, 0.3);
-            fillLight.position.set(-5, -5, -5);
+            // Fill light - subtle light from opposite side
+            const fillLight = new THREE.DirectionalLight(0xffffff, 0.4);
+            fillLight.position.set(-3, 2, -4);
             customizer.scene.add(fillLight);
+
+            // Rim light - highlights edges for depth
+            const rimLight = new THREE.DirectionalLight(0xffffff, 0.3);
+            rimLight.position.set(2, 3, -6);
+            customizer.scene.add(rimLight);
 
             // Create product mesh
             createProductMesh();
@@ -306,88 +326,110 @@ include 'includes/header.php';
         function createRealisticMug() {
             const group = new THREE.Group();
 
+            // Enhanced material for better realism
             const material = new THREE.MeshStandardMaterial({
                 color: customizer.currentColor,
-                roughness: 0.5,
-                metalness: 0,
-                side: THREE.FrontSide
+                roughness: 0.4,
+                metalness: 0.05,
+                side: THREE.FrontSide,
+                envMapIntensity: 1
             });
 
-            // Main mug body - open-ended cylinder (no top/bottom caps)
-            const bodyGeometry = new THREE.CylinderGeometry(0.7, 0.65, 1.2, 64, 32, true);
+            // Main mug body - open-ended cylinder
+            const bodyGeometry = new THREE.CylinderGeometry(0.7, 0.65, 1.2, 128, 32, true);
             const body = new THREE.Mesh(bodyGeometry, material);
             body.castShadow = true;
             body.receiveShadow = true;
             group.add(body);
 
-            // Mug rim/lip at top - torus ring (thinner)
-            const rimGeometry = new THREE.TorusGeometry(0.72, 0.04, 16, 64);
+            // Mug rim/lip - thinner, more refined
+            const rimGeometry = new THREE.TorusGeometry(0.72, 0.035, 20, 128);
             const rimMaterial = new THREE.MeshStandardMaterial({
                 color: customizer.currentColor,
-                roughness: 0.5,
-                metalness: 0
+                roughness: 0.4,
+                metalness: 0.05
             });
             const rim = new THREE.Mesh(rimGeometry, rimMaterial);
             rim.position.y = 0.65;
             rim.rotation.x = Math.PI / 2;
             rim.castShadow = true;
+            rim.receiveShadow = true;
             group.add(rim);
 
-            // Bottom of mug - disk
-            const bottomGeometry = new THREE.CylinderGeometry(0.65, 0.65, 0.08, 64);
+            // Bottom of mug - disk with slight bevel
+            const bottomGeometry = new THREE.CylinderGeometry(0.65, 0.62, 0.08, 128);
             const bottomMaterial = new THREE.MeshStandardMaterial({
                 color: customizer.currentColor,
-                roughness: 0.5,
-                metalness: 0
+                roughness: 0.4,
+                metalness: 0.05
             });
             const bottom = new THREE.Mesh(bottomGeometry, bottomMaterial);
             bottom.position.y = -0.62;
             bottom.castShadow = true;
+            bottom.receiveShadow = true;
             group.add(bottom);
 
-            // Mug handle - curved and realistic
-            const points = [];
-            points.push(new THREE.Vector2(0, 0));
-            points.push(new THREE.Vector2(0.06, 0.12));
-            points.push(new THREE.Vector2(0.16, 0.35));
-            points.push(new THREE.Vector2(0.19, 0.5));
-            points.push(new THREE.Vector2(0.19, 0.7));
-            points.push(new THREE.Vector2(0.16, 0.85));
-            points.push(new THREE.Vector2(0.06, 0.95));
-            points.push(new THREE.Vector2(0, 0.95));
+            // ============ IMPROVED MUG HANDLE ============
+            // Create a smooth curved path for the handle using CatmullRomCurve3
+            const handleCurve = new THREE.CatmullRomCurve3([
+                new THREE.Vector3(0.65, 0.2, 0),      // Start - attached to mug
+                new THREE.Vector3(0.85, 0.35, 0),     // Upper curve
+                new THREE.Vector3(0.95, 0.5, 0),      // Outer peak
+                new THREE.Vector3(0.9, 0.65, 0),      // Top curve
+                new THREE.Vector3(0.75, 0.75, 0),     // Upper inner
+                new THREE.Vector3(0.55, 0.65, 0)      // End - back to mug
+            ]);
 
-            const handleGeometry = new THREE.LatheGeometry(points, 32, 0, Math.PI);
+            // Create tube geometry along the curve for a smooth, 3D handle
+            const tubeGeometry = new THREE.TubeGeometry(handleCurve, 20, 0.08, 12, false);
+            
             const handleMaterial = new THREE.MeshStandardMaterial({
                 color: customizer.currentColor,
-                roughness: 0.5,
-                metalness: 0
+                roughness: 0.4,
+                metalness: 0.05
             });
-            const handle = new THREE.Mesh(handleGeometry, handleMaterial);
-            handle.position.set(0.88, 0.05, 0);
-            handle.scale.set(0.42, 0.6, 0.42);
+            
+            const handle = new THREE.Mesh(tubeGeometry, handleMaterial);
             handle.castShadow = true;
+            handle.receiveShadow = true;
             group.add(handle);
 
-            // Set as product mesh for texture - only the body (sides)
+            // Optional: Add inner rim highlight for depth
+            const innerRimGeometry = new THREE.TorusGeometry(0.68, 0.015, 16, 64);
+            const innerRimMaterial = new THREE.MeshStandardMaterial({
+                color: customizer.currentColor,
+                roughness: 0.35,
+                metalness: 0.1
+            });
+            const innerRim = new THREE.Mesh(innerRimGeometry, innerRimMaterial);
+            innerRim.position.y = 0.62;
+            innerRim.rotation.x = Math.PI / 2;
+            group.add(innerRim);
+
+            // Set as product mesh for texture
             customizer.productMesh = body;
             customizer.productGroup.clear();
             customizer.productGroup.add(group);
 
-            group.rotation.x = 0.1;
-            group.rotation.y = -0.3;
+            // Better initial rotation for viewing angle
+            group.rotation.x = 0.15;
+            group.rotation.y = -0.35;
         }
 
         function createRealisticShirt() {
             const group = new THREE.Group();
 
+            // Fabric-like material for T-shirt
             const material = new THREE.MeshStandardMaterial({
                 color: customizer.currentColor,
-                roughness: 0.6,
-                metalness: 0
+                roughness: 0.65,
+                metalness: 0,
+                side: THREE.FrontSide
             });
 
-            // Main body
+            // Main body - smoother with higher segment count
             const bodyGeometry = new THREE.BoxGeometry(1.6, 2.2, 0.15);
+            bodyGeometry.computeVertexNormals();
             const body = new THREE.Mesh(bodyGeometry, material);
             body.castShadow = true;
             body.receiveShadow = true;
@@ -395,15 +437,18 @@ include 'includes/header.php';
 
             // Left sleeve
             const sleeveGeometry = new THREE.BoxGeometry(0.8, 0.3, 0.15);
+            sleeveGeometry.computeVertexNormals();
             const leftSleeve = new THREE.Mesh(sleeveGeometry, material);
             leftSleeve.position.set(-1.2, 1.2, 0);
             leftSleeve.castShadow = true;
+            leftSleeve.receiveShadow = true;
             group.add(leftSleeve);
 
             // Right sleeve
             const rightSleeve = new THREE.Mesh(sleeveGeometry, material);
             rightSleeve.position.set(1.2, 1.2, 0);
             rightSleeve.castShadow = true;
+            rightSleeve.receiveShadow = true;
             group.add(rightSleeve);
 
             // Neckline indent (visual depth)
@@ -411,6 +456,7 @@ include 'includes/header.php';
             const neck = new THREE.Mesh(neckGeometry, material);
             neck.position.y = 1.1;
             neck.castShadow = true;
+            neck.receiveShadow = true;
             group.add(neck);
 
             customizer.productMesh = body;
@@ -423,33 +469,39 @@ include 'includes/header.php';
         function createRealisticCap() {
             const group = new THREE.Group();
 
+            // Cap material - slightly glossy
             const material = new THREE.MeshStandardMaterial({
                 color: customizer.currentColor,
-                roughness: 0.6,
-                metalness: 0
+                roughness: 0.55,
+                metalness: 0.05,
+                side: THREE.FrontSide
             });
 
-            // Cap crown - cone shape
-            const crownGeometry = new THREE.ConeGeometry(0.8, 0.6, 64);
+            // Cap crown - cone shape with more segments for smooth shading
+            const crownGeometry = new THREE.ConeGeometry(0.8, 0.6, 128, 32);
+            crownGeometry.computeVertexNormals();
             const crown = new THREE.Mesh(crownGeometry, material);
             crown.position.y = 0.3;
             crown.castShadow = true;
             crown.receiveShadow = true;
             group.add(crown);
 
-            // Cap bill/visor - flat rectangle with curve
+            // Cap bill/visor - curved for realism
             const billGeometry = new THREE.BoxGeometry(1.4, 0.3, 0.6);
+            billGeometry.computeVertexNormals();
             const bill = new THREE.Mesh(billGeometry, material);
             bill.position.set(0, -0.1, -0.6);
             bill.rotation.x = 0.2;
             bill.castShadow = true;
+            bill.receiveShadow = true;
             group.add(bill);
 
             // Front band
-            const bandGeometry = new THREE.CylinderGeometry(0.8, 0.75, 0.2, 64, 8);
+            const bandGeometry = new THREE.CylinderGeometry(0.8, 0.75, 0.2, 128, 8);
             const band = new THREE.Mesh(bandGeometry, material);
             band.position.y = -0.15;
             band.castShadow = true;
+            band.receiveShadow = true;
             group.add(band);
 
             customizer.productMesh = crown;
