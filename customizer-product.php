@@ -1,7 +1,10 @@
 <?php
 /**
- * Product Customizer - Mug, T-Shirt, Cap with 3D Preview
- * Triangle Printing Solutions
+ * 3D CORE ENGINE - Version 2.0
+ * Developed by: Shenal Navinda Perera
+ * * Logic: Dual-Canvas UV Mapping & Mesh Node Isolation
+ * This engine handles the independent rendering of front/back designs
+ * by targeting specific mesh identifiers within the GLB architecture.
  */
 session_start();
 require_once 'db.php';
