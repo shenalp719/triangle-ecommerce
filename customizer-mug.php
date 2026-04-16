@@ -221,6 +221,7 @@ include 'includes/header.php';
             customizer.camera.position.set(0, 0.3, 3.2);
             customizer.camera.lookAt(0, 0, 0);
 
+            // 1. THE ENCODING & SOFT SHADOW FIX
             customizer.renderer = new THREE.WebGLRenderer({ 
                 canvas: document.getElementById('preview-canvas'), 
                 antialias: true, alpha: true 
@@ -228,14 +229,26 @@ include 'includes/header.php';
             customizer.renderer.setSize(width, height);
             customizer.renderer.setPixelRatio(window.devicePixelRatio);
             customizer.renderer.shadowMap.enabled = true;
-            customizer.renderer.shadowMap.type = THREE.PCFShadowShadowMap;
+            customizer.renderer.shadowMap.type = THREE.PCFSoftShadowMap; 
+            customizer.renderer.outputEncoding = THREE.sRGBEncoding;
 
             const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
             customizer.scene.add(ambientLight);
 
+            // 2. THE HIGH-RES SHADOW & BIAS FIX (Eliminates curved pixelation)
             const keyLight = new THREE.DirectionalLight(0xffffff, 1);
             keyLight.position.set(4, 6, 5);
             keyLight.castShadow = true;
+            keyLight.shadow.mapSize.width = 2048;
+            keyLight.shadow.mapSize.height = 2048;
+            keyLight.shadow.camera.left = -5;
+            keyLight.shadow.camera.right = 5;
+            keyLight.shadow.camera.top = 5;
+            keyLight.shadow.camera.bottom = -5;
+            keyLight.shadow.camera.near = 0.5;
+            keyLight.shadow.camera.far = 50;
+            keyLight.shadow.bias = -0.001;
+            keyLight.shadow.normalBias = 0.05;
             customizer.scene.add(keyLight);
 
             const fillLight = new THREE.DirectionalLight(0xffffff, 0.4);
@@ -301,7 +314,6 @@ include 'includes/header.php';
             );
         }
 
-        // Clean, single-canvas engine for Mugs
         function createTextTexture() {
             const canvas = document.createElement('canvas');
             canvas.width = 1024;
@@ -324,6 +336,18 @@ include 'includes/header.php';
             function applyTexture() {
                 const texture = new THREE.CanvasTexture(canvas);
                 texture.flipY = true;
+                
+                // THE MIRROR FIX: Flip the texture horizontally on the X-axis
+                texture.wrapS = THREE.RepeatWrapping;
+                texture.repeat.x = -1;
+                
+                // Match the renderer encoding and force sharp linear filtering
+                texture.anisotropy = customizer.renderer.capabilities.getMaxAnisotropy();
+                texture.generateMipmaps = false;
+                texture.minFilter = THREE.LinearFilter;
+                texture.magFilter = THREE.LinearFilter;
+                texture.encoding = THREE.sRGBEncoding; 
+                
                 texture.needsUpdate = true;
 
                 if (customizer.productGroup) {
@@ -354,6 +378,7 @@ include 'includes/header.php';
                 applyTexture();
             }
         }
+
 
         function updateProductColor() {
             if (customizer.productGroup) {
@@ -537,10 +562,12 @@ include 'includes/header.php';
 
         function setupMouseControls() {
             const canvas = document.getElementById('preview-canvas');
+            
             canvas.addEventListener('mousedown', (e) => {
                 customizer.isDragging = true;
                 customizer.previousMousePosition = { x: e.clientX, y: e.clientY };
             });
+            
             canvas.addEventListener('mousemove', (e) => {
                 if (!customizer.isDragging) return;
                 const deltaX = e.clientX - customizer.previousMousePosition.x;
@@ -554,8 +581,28 @@ include 'includes/header.php';
                 }
                 customizer.previousMousePosition = { x: e.clientX, y: e.clientY };
             });
+            
             canvas.addEventListener('mouseup', () => customizer.isDragging = false);
             canvas.addEventListener('mouseleave', () => customizer.isDragging = false);
+
+            // THE ZOOM FIX: Added wheel event listener
+            canvas.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                const zoomSpeed = 0.1;
+                if (e.deltaY < 0) {
+                    customizer.zoom *= (1 + zoomSpeed); // Zoom in
+                } else {
+                    customizer.zoom *= (1 - zoomSpeed); // Zoom out
+                }
+                
+                // Keep zoom within limits (0.5x to 3x)
+                customizer.zoom = Math.max(0.5, Math.min(3, customizer.zoom));
+                
+                // Apply zoom to camera Z position (3.2 is your default starting distance)
+                if (customizer.camera) {
+                    customizer.camera.position.z = 3.2 / customizer.zoom;
+                }
+            }, { passive: false });
         }
 
         function setupCartButtons() {

@@ -1,30 +1,24 @@
 <?php
 /**
- * Product Customizer - T-Shirt 3D Engine
+ * Product Customizer - Cap Preview
  * Triangle Printing Solutions
- * Developed by: Shenal Navinda Perera
  */
 session_start();
 require_once 'db.php';
 
-// Hardcoded for the Shirt module
-$type = 'shirt';
-$page_title = 'T-Shirt Customizer';
+// Hardcoded for the cap file
+$type = 'cap';
+$page_title = 'Cap Customizer';
 
-// Product configuration with hex colors
-$products = [
-    'shirt' => [
-        'name' => 'T-Shirt',
-        'price' => 18,
-        'colors' => ['#FFFFFF', '#001a4d', '#E31E24', '#000000', '#808080'],
-        'colorNames' => ['White', 'Navy', 'Red', 'Black', 'Gray'],
-        'sizes' => ['XS', 'S', 'M', 'L', 'XL', 'XXL'],
-        'description' => 'Design your custom printed t-shirt',
-        '3d' => true
-    ]
+$product = [
+    'name' => 'Custom Cap',
+    'price' => 15,
+    'colors' => ['#001a4d', '#000000', '#E31E24', '#FFFFFF', '#CDAA7D'],
+    'colorNames' => ['Navy', 'Black', 'Red', 'White', 'Khaki'],
+    'sizes' => ['One Size'],
+    'description' => 'Create your personalized embroidered cap',
+    '3d' => true
 ];
-
-$product = $products['shirt'];
 
 include 'includes/header.php';
 ?>
@@ -37,6 +31,7 @@ include 'includes/header.php';
     </section>
 
     <section style="display: flex; gap: 2rem; padding: 2rem; max-width: 1400px; margin: 0 auto;">
+        
         <div style="width: 280px; background-color: var(--white); border: 1px solid var(--border-color); border-radius: 0.75rem; padding: 1.5rem; height: fit-content; max-height: 90vh; overflow-y: auto;">
             <h4 style="margin-bottom: 1.5rem;">Customization</h4>
 
@@ -50,11 +45,13 @@ include 'includes/header.php';
             </div>
 
             <div style="margin-top: 1.5rem; padding: 1rem; background-color: var(--light-gray); border-radius: 0.5rem;">
-                <label style="display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 0.25rem; margin-top: 0.5rem;">Placement</label>
-                <select id="text-placement" style="width: 100%; padding: 0.5rem; margin-bottom: 1rem; border: 1px solid var(--border-color); border-radius: 0.25rem; background-color: var(--dark-grey); color: white;">
-                    <option value="front">Front of Shirt</option>
-                    <option value="back">Back of Shirt</option>
+                <div style="margin-bottom: 1.5rem; padding: 1rem; background-color: #e8f0fe; border-radius: 0.5rem; border: 2px solid #0066cc;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: bold; color: #0066cc;">📍 Print Placement</label>
+                <select id="print-placement" style="width: 100%; padding: 0.75rem; border: 1px solid #0066cc; border-radius: 0.5rem; font-weight: bold; cursor: pointer;">
+                    <option value="front">Front of Cap</option>
+                    <option value="visor">Visor</option>
                 </select>
+            </div>
                 <h5 style="margin-bottom: 1rem;">Add Text</h5>
 
                 <div style="margin-bottom: 1rem;">
@@ -86,7 +83,7 @@ include 'includes/header.php';
 
                 <div style="margin-bottom: 1rem;">
                     <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; font-size: 0.9rem;">Text Color</label>
-                    <input type="color" id="text-color" value="#000000" style="width: 100%; height: 40px; cursor: pointer; border: none; border-radius: 0.5rem;">
+                    <input type="color" id="text-color" value="#FFFFFF" style="width: 100%; height: 40px; cursor: pointer; border: none; border-radius: 0.5rem;">
                 </div>
 
                 <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
@@ -95,19 +92,12 @@ include 'includes/header.php';
                 </div>
 
                 <button style="width: 100%; padding: 0.75rem; background-color: var(--primary-red); color: white; border: none; border-radius: 0.5rem; cursor: pointer; font-weight: 600;" id="add-text">
-                    Add Text to Shirt
+                    Add Text to Cap
                 </button>
             </div>
             
             <div style="margin-top: 1.5rem;">
-                <label style="display: block; margin-bottom: 0.75rem; font-weight: 600;">Add Image to Shirt</label>
-                
-                <label style="display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 0.25rem; margin-top: 0.5rem;">Placement</label>
-                <select id="image-placement" style="width: 100%; padding: 0.5rem; margin-bottom: 1rem; border: 1px solid var(--border-color); border-radius: 0.25rem; background-color: var(--dark-grey); color: white;">
-                    <option value="front">Front of Shirt</option>
-                    <option value="back">Back of Shirt</option>
-                </select>
-
+                <label style="display: block; margin-bottom: 0.75rem; font-weight: 600;">Add Image to Cap</label>
                 <input type="file" id="product-image-upload" accept="image/*" style="width: 100%; padding: 0.75rem; border: 2px dashed var(--primary-red); border-radius: 0.5rem; cursor: pointer;">
                 <small style="color: var(--text-light);">JPG, PNG (max 5MB)</small>
             </div>
@@ -122,14 +112,9 @@ include 'includes/header.php';
                 <button style="width: 100%; padding: 0.75rem; margin-top: 1rem; background-color: var(--danger); color: white; border: none; border-radius: 0.5rem; cursor: pointer; font-size: 0.85rem; font-weight: 600;" id="reset-product">
                     Clear All Layers
                 </button>
+                
                 <div id="layer-controls" style="display: none; margin-top: 1.5rem; padding: 1rem; background-color: var(--white); border: 2px solid var(--border-color); border-radius: 0.5rem;">
                     <h6 style="margin-bottom: 1rem; font-weight: 700; color: var(--primary-red);">Edit Selected Layer</h6>
-                    
-                    <label style="display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 0.5rem;">Quick Placement</label>
-                    <div style="display: flex; gap: 5px; margin-bottom: 1.5rem;">
-                        <button type="button" onclick="snapToPosition('front')" style="flex: 1; padding: 5px; font-size: 0.75rem; background: var(--dark-grey); color: white; border: none; border-radius: 4px; cursor: pointer;">Center</button>
-                    </div>
-
                     <label style="display: flex; justify-content: space-between; font-size: 0.8rem; font-weight: 600; margin-bottom: 0.25rem;">
                         <span>Move Left / Right</span>
                         <span style="color: var(--primary-red); font-weight: bold;">X: <span id="display-x">512</span></span>
@@ -152,7 +137,7 @@ include 'includes/header.php';
             <div id="preview-container" style="width: 100%; height: 100%; position: relative; background: linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%);">
                 <canvas id="preview-canvas" style="display: block; width: 100%; height: 100%;"></canvas>
                 <div id="preview-rotate-hint" style="position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); background-color: rgba(0,0,0,0.7); color: white; padding: 0.5rem 1rem; border-radius: 0.5rem; font-size: 0.85rem; text-align: center;">
-                    💡 Drag to rotate the product
+                    💡 Drag to rotate • Scroll to zoom
                 </div>
             </div>
         </div>
@@ -166,17 +151,6 @@ include 'includes/header.php';
                 <small style="color: var(--text-light);">Base Price</small>
                 <div style="font-size: 1.5rem; font-weight: 700; color: var(--primary-red);" id="base-price">$<?php echo number_format($product['price'], 2); ?></div>
             </div>
-
-            <?php if (!empty($product['sizes']) && $product['sizes'] !== 'One Size'): ?>
-                <div style="margin-bottom: 1.5rem;">
-                    <label style="display: block; margin-bottom: 0.75rem; font-weight: 600;">Size</label>
-                    <select id="product-size" style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem; cursor: pointer;">
-                        <?php foreach ($product['sizes'] as $size): ?>
-                            <option value="<?php echo $size; ?>"><?php echo $size; ?></option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-            <?php endif; ?>
 
             <div style="margin-bottom: 1.5rem;">
                 <label style="display: block; margin-bottom: 0.75rem; font-weight: 600;">Quantity</label>
@@ -192,7 +166,7 @@ include 'includes/header.php';
                 <div style="font-size: 2rem; font-weight: 700; color: var(--primary-red);" id="product-total">$<?php echo number_format($product['price'], 2); ?></div>
             </div>
 
-            <button style="width: 100%; padding: 1rem; background-color: var(--primary-red); color: white; border: none; border-radius: 0.5rem; font-weight: 600; cursor: pointer; margin-bottom: 0.75rem; transition: background-color 0.3s;" id="add-product-cart" onmouseover="this.style.backgroundColor='#c41219'" onmouseout="this.style.backgroundColor='var(--primary-red)'">
+            <button style="width: 100%; padding: 1rem; background-color: var(--primary-red); color: white; border: none; border-radius: 0.5rem; font-weight: 600; cursor: pointer; margin-bottom: 0.75rem; transition: background-color 0.3s;" id="add-product-cart">
                 Add to Cart
             </button>
 
@@ -210,32 +184,29 @@ include 'includes/header.php';
 
     <script src="https://unpkg.com/three@0.128.0/build/three.min.js"></script>
     <script src="https://unpkg.com/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+
+
     <script>
-        // ==================== FALLBACK APP OBJECT ====================
         const app = {
             showNotification: (msg, type) => console.log(`[${type}] ${msg}`),
             addToCart: (id, name, price, details) => console.log(`Added to cart: ${name}`)
         };
 
-        // ==================== CUSTOMIZER STATE ====================
         const customizer = {
-            productType: 'shirt',
+            productType: 'cap',
             basePrice: <?php echo $product['price']; ?>,
             currentColor: '<?php echo $product['colors'][0]; ?>',
             textLayers: [],
             uploadedImage: null,
             textStyles: { bold: false, italic: false },
-            rotation: { x: 0, y: 0, z: 0 },
+            rotation: { x: 0.1, y: -0.5, z: 0 },
             scene: null, camera: null, renderer: null,
             productMesh: null, productGroup: null,
-            raycaster: new THREE.Raycaster(),
-            mouse: new THREE.Vector2(),
             isDragging: false, isDraggingLayer: false, isDraggingCorner: false,
             previousMousePosition: { x: 0, y: 0 },
             selectedLayerId: null, layerDragMode: false, zoom: 1
         };
 
-        // ==================== INITIALIZE SCENE ====================
         function initializeScene() {
             const container = document.getElementById('preview-container');
             const width = container.clientWidth;
@@ -244,12 +215,12 @@ include 'includes/header.php';
             customizer.scene = new THREE.Scene();
             customizer.scene.background = new THREE.Color(0xf8f8f8);
 
-            // Shirt camera is closer (2.5) than the mug
+            // Cap camera set to 2.8 distance
             customizer.camera = new THREE.PerspectiveCamera(60, width / height, 0.1, 1000);
-            customizer.camera.position.set(0, 0.3, 2.5);
+            customizer.camera.position.set(0, 0.3, 2.8);
             customizer.camera.lookAt(0, 0, 0);
 
-            // 1. ENCODING & SOFT SHADOWS
+            // === PIXELATION FIX 1: sRGB ENCODING & SOFT SHADOWS ===
             customizer.renderer = new THREE.WebGLRenderer({ 
                 canvas: document.getElementById('preview-canvas'), 
                 antialias: true, alpha: true 
@@ -263,7 +234,7 @@ include 'includes/header.php';
             const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
             customizer.scene.add(ambientLight);
 
-            // 2. HIGH-RES SHADOWS & BIAS (Fixes jagged surface shadows)
+            // === PIXELATION FIX 2: 2048x2048 HIGH-RES SHADOWS & BIAS ===
             const keyLight = new THREE.DirectionalLight(0xffffff, 1);
             keyLight.position.set(4, 6, 5);
             keyLight.castShadow = true;
@@ -298,111 +269,106 @@ include 'includes/header.php';
             window.addEventListener('resize', onWindowResize);
         }
 
-        // ==================== CREATE PRODUCT MESH ====================
         function createProductMesh() {
-            if (customizer.productGroup) {
-                customizer.scene.remove(customizer.productGroup);
-            }
-
+            if (customizer.productGroup) customizer.scene.remove(customizer.productGroup);
+            
             customizer.productGroup = new THREE.Group();
             customizer.scene.add(customizer.productGroup);
 
             const loader = new THREE.GLTFLoader();
+            const fileUrl = 'assets/models/cap.glb?v=' + Date.now();
+            
             loader.load(
-                `assets/models/shirt.glb`,
+                fileUrl,
                 function(gltf) {
                     const model = gltf.scene;
+                    
                     const box3 = new THREE.Box3().setFromObject(model);
                     const size = box3.getSize(new THREE.Vector3());
                     const maxDim = Math.max(size.x, size.y, size.z);
-                    const scale = 2.5 / maxDim;
+                    const scale = 1.8 / maxDim; 
                     model.scale.multiplyScalar(scale);
                     
                     const scaledBox3 = new THREE.Box3().setFromObject(model);
                     const center = scaledBox3.getCenter(new THREE.Vector3());
                     model.position.sub(center);
+                    model.position.y += 0.2; 
                     
                     model.traverse((child) => {
                         if (child.isMesh) {
                             child.castShadow = true;
                             child.receiveShadow = true;
-                            if (!child.material.isMeshStandardMaterial) {
-                                const oldMaterial = child.material;
-                                child.material = new THREE.MeshStandardMaterial({
-                                    color: customizer.currentColor,
-                                    roughness: 0.4,
-                                    metalness: 0.05,
-                                    map: oldMaterial.map
-                                });
+                            
+                            // CRITICAL: Clone the material so each part is independent
+                            child.material = new THREE.MeshStandardMaterial({
+                                color: customizer.currentColor,
+                                roughness: 0.65,
+                                metalness: 0.05
+                            });
+                            
+                            // TAG THE SPECIFIC MESHES BASED ON YOUR SCAN
+                            if (child.name.includes('004')) {
+                                child.userData.partType = 'front'; // The Yellow piece
+                            } else if (child.name.includes('003')) {
+                                child.userData.partType = 'visor'; // The Blue piece
                             } else {
-                                child.material.color.set(customizer.currentColor);
+                                child.userData.partType = 'other';
                             }
                         }
                     });
                     
                     customizer.productGroup.add(model);
+                    customizer.productGroup.rotation.y = -0.5;
+                    customizer.productGroup.rotation.x = 0.1;
                 }
             );
         }
 
-        // ==================== CREATE TEXT TEXTURE (DUAL CANVAS) ====================
+        // === PIXELATION FIX 3: THE SHARP TEXTURE ENGINE ===
         function createTextTexture() {
-            const canvasFront = document.createElement('canvas');
-            canvasFront.width = 1024; canvasFront.height = 1024;
-            const ctxFront = canvasFront.getContext('2d');
-            ctxFront.fillStyle = customizer.currentColor;
-            ctxFront.fillRect(0, 0, 1024, 1024);
+            const canvas = document.createElement('canvas');
+            canvas.width = 1024;
+            canvas.height = 1024;
+            const ctx = canvas.getContext('2d');
 
-            const canvasBack = document.createElement('canvas');
-            canvasBack.width = 1024; canvasBack.height = 1024;
-            const ctxBack = canvasBack.getContext('2d');
-            ctxBack.fillStyle = customizer.currentColor;
-            ctxBack.fillRect(0, 0, 1024, 1024);
+            ctx.fillStyle = customizer.currentColor;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            function drawTexts(ctx, zone) {
+            function drawTexts() {
                 customizer.textLayers.forEach(layer => {
-                    if (layer.placement === zone) {
-                        ctx.font = `${layer.italic ? 'italic ' : ''}${layer.bold ? 'bold ' : ''}${layer.size}px ${layer.font}`;
-                        ctx.fillStyle = layer.color;
-                        ctx.textAlign = 'center';
-                        ctx.textBaseline = 'middle';
-                        ctx.fillText(layer.content, layer.x !== undefined ? layer.x : 512, layer.y !== undefined ? layer.y : 512);
-                    }
+                    ctx.font = `${layer.italic ? 'italic ' : ''}${layer.bold ? 'bold ' : ''}${layer.size}px ${layer.font}`;
+                    ctx.fillStyle = layer.color;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(layer.content, layer.x !== undefined ? layer.x : 512, layer.y !== undefined ? layer.y : 512);
                 });
             }
 
-            function applyTextures() {
-                // Configure FRONT texture
-                const texFront = new THREE.CanvasTexture(canvasFront);
-                texFront.flipY = true;
-                texFront.anisotropy = customizer.renderer.capabilities.getMaxAnisotropy();
-                texFront.generateMipmaps = false;
-                texFront.minFilter = THREE.LinearFilter;
-                texFront.magFilter = THREE.LinearFilter;
-                texFront.encoding = THREE.sRGBEncoding;
+            function applyTexture() {
+                const texture = new THREE.CanvasTexture(canvas);
+                texture.flipY = true; 
+                texture.anisotropy = customizer.renderer.capabilities.getMaxAnisotropy();
+                texture.generateMipmaps = false;
+                texture.minFilter = THREE.LinearFilter;
+                texture.magFilter = THREE.LinearFilter;
+                texture.encoding = THREE.sRGBEncoding; 
+                texture.needsUpdate = true;
 
-                // Configure BACK texture
-                const texBack = new THREE.CanvasTexture(canvasBack);
-                texBack.flipY = true;
-                texBack.anisotropy = customizer.renderer.capabilities.getMaxAnisotropy();
-                texBack.generateMipmaps = false;
-                texBack.minFilter = THREE.LinearFilter;
-                texBack.magFilter = THREE.LinearFilter;
-                texBack.encoding = THREE.sRGBEncoding;
+                // Read the HTML dropdown to see where the user wants the design
+                const placementDropdown = document.getElementById('print-placement');
+                const targetPart = placementDropdown ? placementDropdown.value : 'front';
 
                 if (customizer.productGroup) {
                     customizer.productGroup.traverse((child) => {
-                        if (child.isMesh && child.material) {
-                            if (child.name === 'Material1718') { // FRONT PIECE
-                                child.material.color.set('#ffffff');
-                                child.material.map = texFront;
-                            } else if (child.name === 'Material1722') { // BACK PIECE
-                                child.material.color.set('#ffffff');
-                                child.material.map = texBack;
-                            } else { 
-                                // Sleeves and Collar stay base color
-                                child.material.color.set(customizer.currentColor);
-                                child.material.map = null;
+                        if (child.isMesh) {
+                            // 1. Reset everything back to the base hat color
+                            child.material.color.set(customizer.currentColor);
+                            child.material.map = null;
+
+                            // 2. Only apply the texture if this is the target part AND there is a design
+                            if (child.userData.partType === targetPart && (customizer.textLayers.length > 0 || customizer.uploadedImage)) {
+                                child.material.color.set('#ffffff'); // White base so colors don't mix
+                                child.material.map = texture;
                             }
                             child.material.needsUpdate = true;
                         }
@@ -417,22 +383,14 @@ include 'includes/header.php';
                     const imgHeight = customizer.uploadedImage.height || imgWidth;
                     const x = (customizer.uploadedImage.x || 512) - (imgWidth / 2);
                     const y = (customizer.uploadedImage.y || 512) - (imgHeight / 2);
-                    
-                    if (customizer.uploadedImage.placement === 'back') {
-                        ctxBack.drawImage(img, x, y, imgWidth, imgHeight);
-                    } else {
-                        ctxFront.drawImage(img, x, y, imgWidth, imgHeight);
-                    }
-                    
-                    drawTexts(ctxFront, 'front');
-                    drawTexts(ctxBack, 'back');
-                    applyTextures();
+                    ctx.drawImage(img, x, y, imgWidth, imgHeight);
+                    drawTexts();
+                    applyTexture();
                 };
                 img.src = customizer.uploadedImage.data || customizer.uploadedImage;
             } else {
-                drawTexts(ctxFront, 'front');
-                drawTexts(ctxBack, 'back');
-                applyTextures();
+                drawTexts();
+                applyTexture();
             }
         }
 
@@ -441,6 +399,7 @@ include 'includes/header.php';
                 customizer.productGroup.traverse((child) => {
                     if (child.isMesh && child.material) {
                         child.material.color.set(customizer.currentColor);
+                        child.material.map = null; // Clear map if just changing raw color
                         child.material.needsUpdate = true;
                     }
                 });
@@ -475,28 +434,42 @@ include 'includes/header.php';
             document.getElementById('text-size').addEventListener('input', (e) => {
                 document.getElementById('size-value').textContent = e.target.value;
             });
-
             document.getElementById('text-bold').addEventListener('click', function() {
                 customizer.textStyles.bold = !customizer.textStyles.bold;
                 this.style.backgroundColor = customizer.textStyles.bold ? '#E31E24' : 'var(--white)';
                 this.style.color = customizer.textStyles.bold ? 'white' : 'var(--text-dark)';
             });
-
             document.getElementById('text-italic').addEventListener('click', function() {
                 customizer.textStyles.italic = !customizer.textStyles.italic;
                 this.style.backgroundColor = customizer.textStyles.italic ? '#E31E24' : 'var(--white)';
                 this.style.color = customizer.textStyles.italic ? 'white' : 'var(--text-dark)';
             });
-
             document.getElementById('add-text').addEventListener('click', addTextLayer);
+            // Listen for placement dropdown changes
+            const placementDropdown = document.getElementById('print-placement');
+            if (placementDropdown) {
+                placementDropdown.addEventListener('change', () => {
+                    app.showNotification('Placement moved! ✓', 'info');
+                    createTextTexture(); // Re-run the texture engine instantly
+                });
+            }
+        }
+
+        function getPlacementCoordinates() {
+            const placement = document.getElementById('print-placement').value;
+            if (placement === 'visor') {
+                return { x: 512, y: 850 }; // Teleports design to the bottom of the UV map (Visor)
+            } else {
+                return { x: 512, y: 350 }; // Teleports design to the top/middle of the UV map (Front)
+            }
         }
 
         function addTextLayer() {
             const textContent = document.getElementById('text-content').value.trim();
-            if (!textContent) return app.showNotification('Please enter text', 'warning');
+            if (!textContent) return;
 
-            const placement = document.getElementById('text-placement').value;
-            const startCoords = getStartingCoordinates();
+            // Get target coordinates based on dropdown
+            const coords = getPlacementCoordinates();
 
             const textLayer = {
                 id: Date.now(),
@@ -506,21 +479,52 @@ include 'includes/header.php';
                 color: document.getElementById('text-color').value,
                 bold: customizer.textStyles.bold,
                 italic: customizer.textStyles.italic,
-                placement: placement,
-                x: startCoords.x,
-                y: startCoords.y + (customizer.textLayers.length * 40)
+                x: coords.x,
+                y: coords.y + (customizer.textLayers.length * 40) // Use the smart Y coordinate
             };
 
             customizer.textLayers.push(textLayer);
             updateLayersList();
             document.getElementById('text-content').value = '';
-            app.showNotification('Text added! Click layer to reposition', 'success');
             createTextTexture();
+        }
+
+        function handleImageUpload(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            if (file.size > 5 * 1024 * 1024) {
+                app.showNotification('File too large (max 5MB)', 'error');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                // Get target coordinates based on dropdown
+                const coords = getPlacementCoordinates();
+
+                customizer.uploadedImage = {
+                    data: event.target.result,
+                    x: coords.x, 
+                    y: coords.y, // Use the smart Y coordinate
+                    width: 300, 
+                    height: 300
+                };
+                
+                const statusDiv = document.getElementById('upload-status');
+                statusDiv.textContent = '✓ Image uploaded! Use sliders below to fine-tune placement.';
+                statusDiv.className = 'success';
+                statusDiv.style.display = 'block';
+
+                updateLayersList();
+                createTextTexture();
+                e.target.value = '';
+            };
+            reader.readAsDataURL(file);
         }
 
         function updateLayersList() {
             const layersList = document.getElementById('layers-list');
-            
             if (customizer.textLayers.length === 0 && !customizer.uploadedImage) {
                 layersList.innerHTML = '<div style="color: var(--text-light); font-size: 0.85rem; text-align: center; padding: 1rem;">No layers yet</div>';
                 return;
@@ -530,14 +534,14 @@ include 'includes/header.php';
             if (customizer.uploadedImage) {
                 html += `
                     <div style="padding: 0.75rem; margin-bottom: 0.5rem; background-color: #e8f5e9; border-left: 3px solid #4caf50; border-radius: 0.25rem; cursor: pointer;" class="layer-item" onclick="selectLayer('image')">
-                        <div style="font-weight: 600; font-size: 0.9rem;">📸 Image (${customizer.uploadedImage.placement})</div>
+                        <div style="font-weight: 600; font-size: 0.9rem;">📸 Image</div>
                         <button onclick="removeImageLayer(event)" style="padding: 0.25rem 0.5rem; background-color: #ff6b6b; color: white; border: none; border-radius: 0.25rem; cursor: pointer; font-size: 0.75rem; margin-top: 0.5rem; width: 100%;">Remove</button>
                     </div>`;
             }
 
             html += customizer.textLayers.map((layer) => `
                 <div style="padding: 0.75rem; margin-bottom: 0.5rem; background-color: #f9f9f9; border-left: 3px solid ${layer.color}; border-radius: 0.25rem; cursor: pointer;" class="layer-item" onclick="selectLayer(${layer.id})">
-                    <div style="font-weight: 600; font-size: 0.9rem; word-break: break-word;">${layer.content.substring(0, 25)} (${layer.placement})</div>
+                    <div style="font-weight: 600; font-size: 0.9rem; word-break: break-word;">${layer.content.substring(0, 25)}</div>
                     <button onclick="removeTextLayer(${layer.id}, event)" style="padding: 0.25rem 0.5rem; background-color: #ff6b6b; color: white; border: none; border-radius: 0.25rem; cursor: pointer; font-size: 0.75rem; margin-top: 0.5rem; width: 100%;">Remove</button>
                 </div>
             `).join('');
@@ -567,22 +571,8 @@ include 'includes/header.php';
             }
         }
 
-        function getStartingCoordinates() {
-            return { x: 512, y: 512 }; 
-        }
-
-        function snapToPosition() {
-            if (!customizer.selectedLayerId) return;
-            document.getElementById('ctrl-x').value = 512;
-            document.getElementById('ctrl-y').value = 512;
-            document.getElementById('display-x').textContent = 512;
-            document.getElementById('display-y').textContent = 512;
-            updateActiveLayer(); 
-        }
-
         function updateActiveLayer() {
             if (!customizer.selectedLayerId) return;
-
             const ctrlX = document.getElementById('ctrl-x').value;
             const ctrlY = document.getElementById('ctrl-y').value;
             const ctrlSize = document.getElementById('ctrl-size').value;
@@ -603,7 +593,7 @@ include 'includes/header.php';
                     layer.size = parseInt(ctrlSize) / 5;
                 }
             }
-            createTextTexture(); 
+            createTextTexture();
         }
 
         function removeTextLayer(id, event) {
@@ -611,16 +601,13 @@ include 'includes/header.php';
             customizer.textLayers = customizer.textLayers.filter(l => l.id !== id);
             updateLayersList();
             createTextTexture();
-            app.showNotification('Text removed', 'info');
         }
 
         function removeImageLayer(event) {
             if (event) event.stopPropagation();
             customizer.uploadedImage = null;
-            document.getElementById('upload-status').style.display = 'none';
             updateLayersList();
             createTextTexture();
-            app.showNotification('Image removed', 'info');
         }
 
         function setupImageUpload() {
@@ -628,26 +615,12 @@ include 'includes/header.php';
                 const file = e.target.files[0];
                 if (!file) return;
 
-                if (file.size > 5 * 1024 * 1024) return app.showNotification('File too large', 'error');
-
                 const reader = new FileReader();
                 reader.onload = function(event) {
-                    const placement = document.getElementById('image-placement').value;
-                    const startCoords = getStartingCoordinates();
-
                     customizer.uploadedImage = {
                         data: event.target.result,
-                        placement: placement,
-                        x: startCoords.x,  
-                        y: startCoords.y,
-                        width: 300, height: 300
+                        x: 512, y: 512, width: 300, height: 300
                     };
-                    
-                    const statusDiv = document.getElementById('upload-status');
-                    statusDiv.textContent = '✓ Image uploaded!';
-                    statusDiv.className = 'success';
-                    statusDiv.style.display = 'block';
-
                     updateLayersList();
                     createTextTexture();
                     e.target.value = '';
@@ -656,20 +629,19 @@ include 'includes/header.php';
             });
         }
 
+        // === PIXELATION FIX 4: ZOOM EVENT ENABLED ===
         function setupMouseControls() {
             const canvas = document.getElementById('preview-canvas');
-
+            
             canvas.addEventListener('mousedown', (e) => {
                 customizer.isDragging = true;
                 customizer.previousMousePosition = { x: e.clientX, y: e.clientY };
             });
-
+            
             canvas.addEventListener('mousemove', (e) => {
                 if (!customizer.isDragging) return;
-
                 const deltaX = e.clientX - customizer.previousMousePosition.x;
                 const deltaY = e.clientY - customizer.previousMousePosition.y;
-
                 customizer.rotation.y += deltaX * 0.01;
                 customizer.rotation.x += deltaY * 0.01;
 
@@ -679,18 +651,24 @@ include 'includes/header.php';
                 }
                 customizer.previousMousePosition = { x: e.clientX, y: e.clientY };
             });
-
+            
             canvas.addEventListener('mouseup', () => customizer.isDragging = false);
             canvas.addEventListener('mouseleave', () => customizer.isDragging = false);
 
             canvas.addEventListener('wheel', (e) => {
                 e.preventDefault();
                 const zoomSpeed = 0.1;
-                if (e.deltaY < 0) customizer.zoom *= (1 + zoomSpeed);
-                else customizer.zoom *= (1 - zoomSpeed);
+                if (e.deltaY < 0) {
+                    customizer.zoom *= (1 + zoomSpeed);
+                } else {
+                    customizer.zoom *= (1 - zoomSpeed);
+                }
                 
                 customizer.zoom = Math.max(0.5, Math.min(3, customizer.zoom));
-                if (customizer.camera) customizer.camera.position.z = 2.5 / customizer.zoom;
+                
+                if (customizer.camera) {
+                    customizer.camera.position.z = 2.8 / customizer.zoom; // 2.8 is base distance for cap
+                }
             }, { passive: false });
         }
 
@@ -702,15 +680,14 @@ include 'includes/header.php';
                     document.getElementById('product-total').textContent = '$' + (customizer.basePrice * input.value).toFixed(2);
                 });
             });
-
+            
             document.getElementById('reset-product').addEventListener('click', () => {
                 if (confirm('Clear all layers and designs?')) {
                     customizer.textLayers = [];
                     customizer.uploadedImage = null;
-                    customizer.selectedLayerId = null;
+                    document.getElementById('layer-controls').style.display = 'none';
                     updateLayersList();
-                    document.getElementById('upload-status').style.display = 'none';
-                    createTextTexture();
+                    updateProductColor();
                 }
             });
         }
@@ -733,13 +710,12 @@ include 'includes/header.php';
     <style>
         #preview-canvas { cursor: grab; }
         #preview-canvas:active { cursor: grabbing; }
-        #upload-status { font-size: 0.9rem; padding: 0.75rem; border-radius: 0.5rem; margin-top: 0.75rem; border-left: 4px solid; }
-        #upload-status.success { background-color: #d4edda; color: #155724; border-left-color: #155724; }
-        #upload-status.error { background-color: #f8d7da; color: #721c24; border-left-color: #721c24; }
         .color-btn { transition: all 0.3s ease; }
         .color-btn:hover { transform: scale(1.05); }
-        @media (max-width: 1200px) { section > div { width: 100% !important; } section { flex-direction: column !important; gap: 1.5rem; } }
-        @media (max-width: 768px) { #preview-container { min-height: 400px; } section > div { max-height: none !important; } }
+        @media (max-width: 1200px) {
+            section > div { width: 100% !important; }
+            section { flex-direction: column !important; gap: 1.5rem; }
+        }
     </style>
 
 <?php include 'includes/footer.php'; ?>
