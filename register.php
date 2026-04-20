@@ -1,134 +1,101 @@
 <?php
-/**
- * Register Page - Triangle Printing Solutions
- */
 session_start();
-require_once 'db.php';
+require_once 'db.php'; // Make sure this file sets up your database connection as $conn
 
-// If already logged in, redirect to dashboard
-if (isset($_SESSION['user_id'])) {
-    header('Location: /triangle-ecommerce/dashboard.php');
-    exit();
-}
-
+$page_title = 'Register';
 $error = '';
 $success = '';
 
-// Handle registration
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $email = sanitize($_POST['email'] ?? '');
-    $password = $_POST['password'] ?? '';
-    $password_confirm = $_POST['password_confirm'] ?? '';
-    $first_name = sanitize($_POST['first_name'] ?? '');
-    $last_name = sanitize($_POST['last_name'] ?? '');
-    
-    // Validation
-    if (!$email || !$password || !$first_name) {
-        $error = 'Please fill in all required fields';
-    } elseif (strlen($password) < 8) {
-        $error = 'Password must be at least 8 characters';
-    } elseif ($password !== $password_confirm) {
-        $error = 'Passwords do not match';
+    $first_name = trim($_POST['first_name']);
+    $last_name = trim($_POST['last_name']);
+    $email = trim($_POST['email']);
+    $password = $_POST['password'];
+    $confirm_password = $_POST['confirm_password'];
+
+    // Basic validation
+    if (empty($first_name) || empty($last_name) || empty($email) || empty($password)) {
+        $error = "Please fill in all required fields.";
+    } elseif ($password !== $confirm_password) {
+        $error = "Passwords do not match.";
     } else {
         // Check if email already exists
-        $checkResult = executeQuery("SELECT id FROM users WHERE email = '$email'");
-        
-        if ($checkResult && $checkResult->num_rows > 0) {
-            $error = 'Email already registered';
+        $stmt = $conn->prepare("SELECT id FROM users WHERE email = ?");
+        $stmt->bind_param("s", $email);
+        $stmt->execute();
+        $stmt->store_result();
+
+        if ($stmt->num_rows > 0) {
+            $error = "An account with this email already exists.";
         } else {
-            // Create account
+            // Hash the password securely
             $hashed_password = password_hash($password, PASSWORD_DEFAULT);
+            $role = 'customer'; // Default role
+
+            // Insert new user
+            $insert_stmt = $conn->prepare("INSERT INTO users (first_name, last_name, email, password, role) VALUES (?, ?, ?, ?, ?)");
+            $insert_stmt->bind_param("sssss", $first_name, $last_name, $email, $hashed_password, $role);
             
-            $insertSQL = "INSERT INTO users (email, password, first_name, last_name, role) 
-                         VALUES ('$email', '$hashed_password', '$first_name', '$last_name', 'customer')";
-            
-            if (executeQuery($insertSQL)) {
-                $success = 'Account created successfully! Please login.';
-                
-                // Auto-login
-                $userResult = executeQuery("SELECT id, email, first_name, role FROM users WHERE email = '$email'");
-                if ($userResult && $userResult->num_rows === 1) {
-                    $user = $userResult->fetch_assoc();
-                    $_SESSION['user_id'] = $user['id'];
-                    $_SESSION['user_email'] = $user['email'];
-                    $_SESSION['user_name'] = $user['first_name'];
-                    $_SESSION['role'] = $user['role'];
-                    
-                    header('Location: /triangle-ecommerce/dashboard.php');
-                    exit();
-                }
+            if ($insert_stmt->execute()) {
+                $success = "Registration successful! You can now login.";
             } else {
-                $error = 'Error creating account. Please try again.';
+                $error = "Something went wrong. Please try again.";
             }
+            $insert_stmt->close();
         }
+        $stmt->close();
     }
 }
 
-$page_title = 'Register';
 include 'includes/header.php';
 ?>
 
-    <section style="max-width: 600px; margin: 3rem auto; padding: 2rem;">
-        <div class="card">
-            <div class="card-body">
-                <h2 style="text-align: center; margin-bottom: 2rem;">Create Your Account</h2>
+<section class="container" style="padding-top: 4rem; padding-bottom: 4rem; max-width: 500px; margin: 0 auto;">
+    <div style="background: var(--white); padding: 2rem; border-radius: 0.75rem; border: 1px solid var(--border-color);">
+        <h2 style="margin-bottom: 1.5rem; text-align: center;">Create an Account</h2>
+        
+        <?php if ($error): ?>
+            <div style="background: #f8d7da; color: #721c24; padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem;"><?php echo $error; ?></div>
+        <?php endif; ?>
+        
+        <?php if ($success): ?>
+            <div style="background: #d4edda; color: #155724; padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem;"><?php echo $success; ?></div>
+        <?php endif; ?>
 
-                <?php if ($error): ?>
-                    <div class="alert alert-error"><?php echo htmlspecialchars($error); ?></div>
-                <?php endif; ?>
-
-                <?php if ($success): ?>
-                    <div class="alert alert-success"><?php echo htmlspecialchars($success); ?></div>
-                <?php endif; ?>
-
-                <form method="POST" action="">
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-                        <div class="form-group" style="margin-bottom: 1rem;">
-                            <label for="first_name">First Name *</label>
-                            <input type="text" id="first_name" name="first_name" required>
-                        </div>
-
-                        <div class="form-group" style="margin-bottom: 1rem;">
-                            <label for="last_name">Last Name</label>
-                            <input type="text" id="last_name" name="last_name">
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="email">Email Address *</label>
-                        <input type="email" id="email" name="email" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="password">Password *</label>
-                        <input type="password" id="password" name="password" required minlength="8">
-                        <small style="color: var(--text-light);">Minimum 8 characters</small>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="password_confirm">Confirm Password *</label>
-                        <input type="password" id="password_confirm" name="password_confirm" required minlength="8">
-                    </div>
-
-                    <div style="margin-bottom: 1.5rem;">
-                        <label style="display: flex; align-items: flex-start; gap: 0.5rem;">
-                            <input type="checkbox" name="terms" required style="margin-top: 0.25rem;">
-                            <span style="font-size: 0.9rem;">I agree to the <a href="#" style="color: var(--primary-red);">Terms of Service</a> and <a href="#" style="color: var(--primary-red);">Privacy Policy</a></span>
-                        </label>
-                    </div>
-
-                    <button type="submit" class="btn btn-primary btn-block" style="padding: 0.875rem;">
-                        Create Account
-                    </button>
-                </form>
-
-                <hr style="margin: 1.5rem 0; border: none; border-top: 1px solid var(--border-color);">
-
-                <p style="text-align: center; margin-bottom: 0;">
-                    Already have an account? <a href="login.php" style="font-weight: 600;">Login here</a>
-                </p>
+        <form method="POST" action="">
+            <div style="display: flex; gap: 1rem; margin-bottom: 1rem;">
+                <div style="flex: 1;">
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: bold;">First Name</label>
+                    <input type="text" name="first_name" required style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
+                </div>
+                <div style="flex: 1;">
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Last Name</label>
+                    <input type="text" name="last_name" required style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
+                </div>
             </div>
-        </div>
-    </section>
+
+            <div style="margin-bottom: 1rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Email Address</label>
+                <input type="email" name="email" required style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
+            </div>
+
+            <div style="margin-bottom: 1rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Password</label>
+                <input type="password" name="password" required style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
+            </div>
+
+            <div style="margin-bottom: 1.5rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Confirm Password</label>
+                <input type="password" name="confirm_password" required style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block" style="width: 100%; padding: 1rem; border-radius: 0.5rem; font-weight: bold; cursor: pointer;">Register</button>
+            
+            <p style="text-align: center; margin-top: 1rem;">
+                Already have an account? <a href="login.php" style="color: var(--primary-red);">Login here</a>
+            </p>
+        </form>
+    </div>
+</section>
 
 <?php include 'includes/footer.php'; ?>

@@ -1,100 +1,80 @@
 <?php
-/**
- * Login Page - Triangle Printing Solutions
- */
 session_start();
 require_once 'db.php';
 
-// If already logged in, redirect to dashboard
+// If already logged in, send them to the cart
 if (isset($_SESSION['user_id'])) {
-    header('Location: /triangle-ecommerce/dashboard.php');
+    header("Location: cart.php");
     exit();
 }
 
+$page_title = 'Login';
 $error = '';
-$success = '';
 
-// Handle login
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $email = sanitize($_POST['email'] ?? '');
-    $password = $_POST['password'] ?? '';
-    
-    if (!$email || !$password) {
-        $error = 'Please fill in all fields';
+    $email = trim($_POST['email']);
+    $password = $_POST['password'];
+
+    if (empty($email) || empty($password)) {
+        $error = "Please enter both email and password.";
     } else {
-        $result = executeQuery("SELECT id, email, password, first_name, role FROM users WHERE email = '$email'");
-        
-        if ($result && $result->num_rows === 1) {
+        $stmt = $conn->prepare("SELECT id, first_name, last_name, password, role FROM users WHERE email = ?");
+        $stmt->bind_param("s", $email);
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        if ($result->num_rows === 1) {
             $user = $result->fetch_assoc();
             
+            // Verify the hashed password
             if (password_verify($password, $user['password'])) {
-                // Login successful
+                // Set Session Variables
                 $_SESSION['user_id'] = $user['id'];
-                $_SESSION['user_email'] = $user['email'];
-                $_SESSION['user_name'] = $user['first_name'];
+                $_SESSION['user_name'] = $user['first_name'] . ' ' . $user['last_name'];
                 $_SESSION['role'] = $user['role'];
                 
-                header('Location: /triangle-ecommerce/dashboard.php');
+                // Redirect to cart or dashboard
+                header("Location: cart.php");
                 exit();
             } else {
-                $error = 'Invalid password';
+                $error = "Invalid email or password.";
             }
         } else {
-            $error = 'Email not found';
+            $error = "Invalid email or password.";
         }
+        $stmt->close();
     }
 }
 
-$page_title = 'Login';
 include 'includes/header.php';
 ?>
 
-    <section style="max-width: 500px; margin: 3rem auto; padding: 2rem;">
-        <div class="card">
-            <div class="card-body">
-                <h2 style="text-align: center; margin-bottom: 2rem;">Login to Your Account</h2>
+<section class="container" style="padding-top: 4rem; padding-bottom: 4rem; max-width: 400px; margin: 0 auto;">
+    <div style="background: var(--white); padding: 2rem; border-radius: 0.75rem; border: 1px solid var(--border-color);">
+        <h2 style="margin-bottom: 1.5rem; text-align: center;">Welcome Back</h2>
+        
+        <?php if ($error): ?>
+            <div style="background: #f8d7da; color: #721c24; padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem;"><?php echo $error; ?></div>
+        <?php endif; ?>
 
-                <?php if ($error): ?>
-                    <div class="alert alert-error"><?php echo $error; ?></div>
-                <?php endif; ?>
-
-                <form method="POST" action="">
-                    <div class="form-group">
-                        <label for="email">Email Address</label>
-                        <input type="email" id="email" name="email" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="password">Password</label>
-                        <input type="password" id="password" name="password" required>
-                    </div>
-
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-                        <label style="display: flex; align-items: center; gap: 0.5rem;">
-                            <input type="checkbox" name="remember"> Remember me
-                        </label>
-                        <a href="#forgot" style="font-size: 0.9rem;">Forgot password?</a>
-                    </div>
-
-                    <button type="submit" class="btn btn-primary btn-block" style="padding: 0.875rem;">
-                        Login
-                    </button>
-                </form>
-
-                <hr style="margin: 1.5rem 0; border: none; border-top: 1px solid var(--border-color);">
-
-                <p style="text-align: center; margin-bottom: 0;">
-                    Don't have an account? <a href="register.php" style="font-weight: 600;">Register here</a>
-                </p>
+        <form method="POST" action="">
+            <div style="margin-bottom: 1rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Email Address</label>
+                <input type="email" name="email" required style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
             </div>
-        </div>
 
-        <!-- Demo Credentials -->
-        <div class="alert alert-info" style="margin-top: 1.5rem;">
-            <strong>Demo Account:</strong><br>
-            Email: demo@triangleprinting.com<br>
-            Password: demo123456
-        </div>
-    </section>
+            <div style="margin-bottom: 1.5rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Password</label>
+                <input type="password" name="password" required style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block" style="width: 100%; padding: 1rem; border-radius: 0.5rem; font-weight: bold; cursor: pointer;">Login</button>
+            
+            <p style="text-align: center; margin-top: 1rem;">
+                Don't have an account? <a href="register.php" style="color: var(--primary-red);">Register here</a>
+            </p>
+        </form>
+    </div>
+</section>
 
 <?php include 'includes/footer.php'; ?>

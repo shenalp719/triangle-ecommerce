@@ -80,10 +80,10 @@ function sendChatMessage() {
     
     // Get bot response
     setTimeout(() => {
-        removeTy pingIndicator();
+        removeTypingIndicator();
         const response = getBotResponse(message);
         addChatMessage(response, 'bot');
-    }, 800);
+    }, 800);   
     
     trackEvent('chatbot_message_sent', { message: message });
 }
