@@ -171,9 +171,9 @@ include 'includes/header.php';
                 <div class="grid grid-4">
                     <?php foreach (array_slice($designs, 0, 4) as $design): ?>
                         <div class="card">
-                            <div style="height: 200px; background-color: var(--light-gray); display: flex; align-items: center; justify-content: center; border-bottom: 1px solid var(--border-color);">
-                                <?php if ($design['preview_image']): ?>
-                                    <img src="data:image/jpeg;base64,<?php echo base64_encode($design['preview_image']); ?>" alt="Design" style="width: 100%; height: 100%; object-fit: cover;">
+                            <div style="height: 200px; background-color: var(--light-gray); display: flex; align-items: center; justify-content: center; border-bottom: 1px solid var(--border-color); overflow: hidden;">
+                                <?php if (!empty($design['preview_image'])): ?>
+                                    <img src="data:image/png;base64,<?php echo base64_encode($design['preview_image']); ?>" alt="Design" style="width: 100%; height: 100%; object-fit: cover;">
                                 <?php else: ?>
                                     <span style="color: var(--text-light);">No Preview</span>
                                 <?php endif; ?>
@@ -183,11 +183,6 @@ include 'includes/header.php';
                                 <small style="color: var(--text-light);">
                                     <?php echo date('M d, Y', strtotime($design['created_at'])); ?>
                                 </small>
-                                <div style="margin-top: 1rem;">
-                                    <button class="btn btn-sm btn-primary btn-block">
-                                        Edit Design
-                                    </button>
-                                </div>
                             </div>
                         </div>
                     <?php endforeach; ?>
@@ -199,7 +194,7 @@ include 'includes/header.php';
                 <?php endif; ?>
             <?php else: ?>
                 <div class="alert alert-info">
-                    No saved designs yet. <a href="customizer-frame.php">Create your first design!</a>
+                    No saved designs yet. <a href="products.php">Create your first design!</a>
                 </div>
             <?php endif; ?>
         </div>
