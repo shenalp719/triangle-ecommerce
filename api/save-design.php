@@ -1,4 +1,8 @@
 <?php
+
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
 /**
  * Save Design API
  * Triangle Printing Solutions
@@ -42,18 +46,29 @@ if (isset($data['preview_image']) && strpos($data['preview_image'], 'data:image'
     $preview_image = base64_decode($imageData);
 }
 
-// Insert into database
-$sql = "INSERT INTO designs (user_id, product_id, name, canvas_json, preview_image, width, height, resolution_dpi) 
-        VALUES ($user_id, $product_id, '$name', '$canvas_json', ?, $width, $height, $resolution_dpi)";
-
-// Use prepared statement for BLOB
-$stmt = $conn->prepare($sql);
-$null = NULL;
-$stmt->bind_param('sb', $null, $preview_image);
-
-if ($preview_image) {
-    $stmt->bind_param('b', $preview_image);
+// Handle preview image if provided
+$preview_image = null;
+if (isset($data['preview_image']) && strpos($data['preview_image'], 'data:image') === 0) {
+    // Extract the raw Base64 string
+    $imageData = preg_replace('#^data:image/\w+;base64,#i', '', $data['preview_image']);
+    $preview_image = base64_decode($imageData);
 }
+
+// SECURE PREPARED STATEMENT: All 8 variables use '?' to prevent SQL Injection
+$sql = "INSERT INTO designs (user_id, product_id, name, canvas_json, preview_image, width, height, resolution_dpi) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+
+$stmt = $conn->prepare($sql);
+
+if (!$stmt) {
+    http_response_code(500);
+    echo json_encode(['success' => false, 'message' => 'Database prepare failed: ' . $conn->error]);
+    exit();
+}
+
+// i = integer, s = string, b = blob
+// We use 's' for the preview_image here because PHP passes binary data perfectly as strings in mysqli
+$stmt->bind_param('iissssii', $user_id, $product_id, $name, $canvas_json, $preview_image, $width, $height, $resolution_dpi);
 
 if ($stmt->execute()) {
     $design_id = $conn->insert_id;
@@ -66,7 +81,8 @@ if ($stmt->execute()) {
     http_response_code(500);
     echo json_encode([
         'success' => false,
-        'message' => 'Error saving design: ' . $conn->error
+        'message' => 'Error saving design: ' . $stmt->error
     ]);
 }
+$stmt->close();
 ?>

@@ -938,23 +938,51 @@ include 'includes/header.php';
             document.getElementById('product-quantity').addEventListener('change', updateProductTotal);
             document.getElementById('product-quantity').addEventListener('input', updateProductTotal);
 
-            document.getElementById('add-product-cart').addEventListener('click', () => {
-                const quantity = parseInt(document.getElementById('product-quantity').value) || 1;
-                const price = customizer.basePrice;
+            document.getElementById('add-product-cart').addEventListener('click', function() {
+            const quantity = parseInt(document.getElementById('product-quantity').value) || 1;
+            const productName = 'Custom ' + (customizer.productType.charAt(0).toUpperCase() + customizer.productType.slice(1));
+
+            if (typeof app !== 'undefined' && typeof app.addToCart === 'function') {
+                // 1. Add the item to the global cart
+                app.addToCart(customizer.productType + '_' + Date.now(), productName, customizer.basePrice);
                 
-                for (let i = 0; i < quantity; i++) {
-                    app.addToCart(
-                        customizer.productType + '-' + Date.now() + '-' + i,
-                        '<?php echo $product['name']; ?>',
-                        price,
-                        null
-                    );
-                }
+                // Show the little green notification box
+                app.showNotification('Design added to cart successfully!', 'success');
+
+                // 2. Hide the "Add to Cart" button
+                this.style.display = 'none';
+
+                // 3. Generate the two new buttons dynamically
+                const actionsDiv = document.createElement('div');
+                actionsDiv.id = 'post-cart-actions';
+                actionsDiv.style.display = 'flex';
+                actionsDiv.style.gap = '10px';
+                actionsDiv.style.animation = 'fadeIn 0.3s ease-in'; // Smooth fade-in effect
                 
-                app.showNotification(quantity + ' item(s) added to cart! ✓', 'success');
-                document.getElementById('product-quantity').value = 1;
-                updateProductTotal();
-            });
+                actionsDiv.innerHTML = `
+                    <a href="cart.php" class="btn btn-primary" style="flex: 1; text-align: center; background-color: #28a745; border: none; padding: 1rem; border-radius: 0.5rem; color: white; text-decoration: none; font-weight: bold;">
+                        Go to Cart 🛒
+                    </a>
+                    <button id="continue-shopping" class="btn btn-secondary" style="flex: 1; padding: 1rem; border-radius: 0.5rem; font-weight: bold; cursor: pointer;">
+                        Stay & Design
+                    </button>
+                `;
+
+                // Inject the new buttons right where the old one was
+                this.parentNode.insertBefore(actionsDiv, this.nextSibling);
+
+                // 4. Make the "Stay & Design" button reset the UI so they can keep working
+                document.getElementById('continue-shopping').addEventListener('click', (e) => {
+                    e.preventDefault();
+                    actionsDiv.remove(); // Delete the two buttons
+                    this.style.display = 'block'; // Bring back the original "Add to Cart" button
+                });
+
+            } else {
+                console.error("Cart system is not loaded properly.");
+                alert("Error adding to cart. Please check your connection.");
+            }
+        });
 
             document.getElementById('reset-product').addEventListener('click', () => {
                 if (confirm('Clear all layers and designs?')) {

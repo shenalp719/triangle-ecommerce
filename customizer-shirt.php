@@ -742,4 +742,118 @@ include 'includes/header.php';
         @media (max-width: 768px) { #preview-container { min-height: 400px; } section > div { max-height: none !important; } }
     </style>
 
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
+
+                // Listen to ALL clicks on the webpage (This provides the 'async (e)' wrapper!)
+                document.body.addEventListener('click', async (e) => {
+                    
+                    // ==========================================
+                    // 1. ADD TO CART LOGIC
+                    // ==========================================
+                    if (e.target && e.target.id === 'add-product-cart') {
+                        e.preventDefault();
+                        console.log("🛒 Add to Cart clicked!");
+
+                        const productType = (typeof customizer !== 'undefined') ? customizer.productType : 'product';
+                        const basePrice = (typeof customizer !== 'undefined') ? customizer.basePrice : 15.00;
+                        const productName = 'Custom ' + productType.charAt(0).toUpperCase() + productType.slice(1);
+
+                        if (window.app && window.app.addToCart) {
+                            window.app.addToCart(productType + '_' + Date.now(), productName, basePrice);
+                            window.app.showNotification('Design added to cart!', 'success');
+
+                            e.target.style.display = 'none';
+
+                            const actionsDiv = document.createElement('div');
+                            actionsDiv.id = 'post-cart-actions';
+                            actionsDiv.style.display = 'flex';
+                            actionsDiv.style.gap = '10px';
+                            actionsDiv.style.marginTop = '1rem';
+
+                            actionsDiv.innerHTML = `
+                                <a href="cart.php" class="btn btn-primary" style="flex: 1; text-align: center; background-color: #28a745; border: none; padding: 1rem; border-radius: 0.5rem; color: white; text-decoration: none; font-weight: bold;">
+                                    Go to Cart 🛒
+                                </a>
+                                <button id="continue-shopping" class="btn btn-secondary" style="flex: 1; padding: 1rem; border-radius: 0.5rem; font-weight: bold; cursor: pointer;">
+                                    Stay & Design
+                                </button>
+                            `;
+
+                            e.target.parentNode.insertBefore(actionsDiv, e.target.nextSibling);
+
+                            document.getElementById('continue-shopping').addEventListener('click', (ev) => {
+                                ev.preventDefault();
+                                actionsDiv.remove(); 
+                                e.target.style.display = 'block'; 
+                            });
+                        }
+                    }
+
+                    // ==========================================
+                    // 2. SAVE DESIGN (REAL SCREENSHOT MODE)
+                    // ==========================================
+                    if (e.target && e.target.id === 'save-product-design') {
+                        e.preventDefault();
+                        console.log("✅ Save Design clicked! Starting process...");
+
+                        const saveBtn = e.target;
+                        const originalText = saveBtn.innerHTML;
+                        saveBtn.innerHTML = 'Saving to Profile... ⏳';
+                        saveBtn.disabled = true;
+
+                        try {
+                            const productType = (typeof customizer !== 'undefined') ? customizer.productType : 'product';
+                            const designName = 'My Custom ' + productType.charAt(0).toUpperCase() + productType.slice(1);
+                            const canvasData = JSON.stringify({ color: (typeof customizer !== 'undefined') ? customizer.currentColor : '#ffffff' });
+
+                            console.log("🚀 Taking a screenshot and sending data...");
+
+                            // --- THE SCREENSHOT CAMERA ---
+                            if (typeof customizer !== 'undefined' && customizer.renderer) {
+                                customizer.renderer.render(customizer.scene, customizer.camera);
+                            }
+                            const canvasElement = document.getElementById('preview-canvas');
+                            const imageScreenshot = canvasElement ? canvasElement.toDataURL('image/png') : null;
+                            // ----------------------------------
+
+                            const response = await fetch('api/save-design.php', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    name: designName,
+                                    canvas_json: canvasData,
+                                    preview_image: imageScreenshot
+                                })
+                            });
+
+                            const rawText = await response.text();
+                            console.log("📥 Raw Server Response:", rawText);
+
+                            let result;
+                            try {
+                                result = JSON.parse(rawText);
+                            } catch (parseErr) {
+                                throw new Error("Server crashed. Look at the raw response in the Console.");
+                            }
+
+                            if (response.ok && result.success) {
+                                console.log("🎉 Database saved successfully!");
+                                if (window.app) window.app.showNotification('Design saved perfectly!', 'success');
+                            } else {
+                                throw new Error(result.message || 'Failed to save design');
+                            }
+
+                        } catch (error) {
+                            console.error("❌ Save API Error:", error);
+                            if (window.app) window.app.showNotification('Error: ' + error.message, 'error');
+                        } finally {
+                            saveBtn.innerHTML = originalText;
+                            saveBtn.disabled = false;
+                        }
+                    }
+                });
+            });
+            </script>
+
 <?php include 'includes/footer.php'; ?>

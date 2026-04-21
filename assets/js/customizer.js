@@ -108,7 +108,7 @@ document.getElementById('image-upload').addEventListener('change', (e) => {
                 fabricImg.scaleToWidth(300);
                 fabricCanvas.centerObject(fabricImg);
                 fabricCanvas.add(fabricImg);
-                fabric Canvas.setActiveObject(fabricImg);
+                fabricCanvas.setActiveObject(fabricImg);
                 fabricCanvas.renderAll();
                 
                 currentImage = fabricImg;
