@@ -4,6 +4,16 @@ if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== tru
     header("Location: login.php");
     exit();
 }
+
+// THE RBAC LOCK: Block staff from inventory management
+if ($_SESSION['admin_role'] !== 'admin') {
+    die("<div style='padding: 50px; text-align: center; font-family: sans-serif; color: #721c24; background: #f8d7da;'>
+            <h1>Access Denied 🛑</h1>
+            <p>You do not have Administrator privileges to manage inventory or pricing.</p>
+            <a href='orders.php'>Return to Orders</a>
+         </div>");
+}
+
 require_once '../db.php';
 
 $message = '';
@@ -81,13 +91,21 @@ $products = $conn->query("SELECT * FROM products ORDER BY id DESC");
 <body>
     <div class="sidebar">
         <h2>Triangle Admin</h2>
-        <a href="index.php">Dashboard</a>
-        <a href="orders.php">Manage Orders</a>
-        <a href="products.php" class="active">Products (CRUD)</a>
-        <a href="customers.php">Customers</a>
+        
         <?php if($_SESSION['admin_role'] === 'admin'): ?>
-            <a href="settings.php">Settings (Owner)</a>
+            <a href="index.php" class="<?php echo basename($_SERVER['PHP_SELF']) == 'index.php' ? 'active' : ''; ?>">Dashboard & Analytics</a>
+        <?php else: ?>
+            <a href="staff_dashboard.php" class="<?php echo basename($_SERVER['PHP_SELF']) == 'staff_dashboard.php' ? 'active' : ''; ?>">Staff Home</a>
         <?php endif; ?>
+        
+        <a href="orders.php" class="<?php echo basename($_SERVER['PHP_SELF']) == 'orders.php' ? 'active' : ''; ?>">Manage Orders</a>
+        
+        <?php if($_SESSION['admin_role'] === 'admin'): ?>
+            <a href="products.php" class="<?php echo basename($_SERVER['PHP_SELF']) == 'products.php' ? 'active' : ''; ?>">Products (CRUD)</a>
+            <a href="customers.php" class="<?php echo basename($_SERVER['PHP_SELF']) == 'customers.php' ? 'active' : ''; ?>">User Management</a>
+            <a href="settings.php" class="<?php echo basename($_SERVER['PHP_SELF']) == 'settings.php' ? 'active' : ''; ?>">System Security</a>
+        <?php endif; ?>
+        
         <a href="logout.php" style="margin-top: auto; background-color: #c82333;">Logout</a>
     </div>
 

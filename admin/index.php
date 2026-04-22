@@ -4,6 +4,13 @@ if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== tru
     header("Location: login.php");
     exit();
 }
+
+// THE RBAC LOCK: Bounce staff members directly to their custom dashboard
+if ($_SESSION['admin_role'] === 'staff') {
+    header("Location: staff_dashboard.php");
+    exit();
+}
+
 require_once '../db.php';
 
 // Analytics & Reporting (Per functionality requirements)
@@ -42,18 +49,22 @@ $net_revenue = $gross_revenue - $stripe_fees;
 
     <div class="sidebar">
         <h2>Triangle Admin</h2>
-        <a href="index.php" class="active">Dashboard</a>
-        <a href="orders.php">Manage Orders 
-            <?php if($pending_orders > 0) echo "<span style='background:var(--primary); padding:2px 8px; border-radius:10px; font-size:0.8rem; float:right;'>$pending_orders</span>"; ?>
-        </a>
-        <a href="products.php">Products (CRUD)</a>
-        <a href="customers.php">Customers</a>
         
-        <?php if($_SESSION['admin_role'] === 'sysadmin'): ?>
-            <a href="settings.php">System Security</a>
+        <?php if($_SESSION['admin_role'] === 'admin'): ?>
+            <a href="index.php" class="<?php echo basename($_SERVER['PHP_SELF']) == 'index.php' ? 'active' : ''; ?>">Dashboard & Analytics</a>
+        <?php else: ?>
+            <a href="staff_dashboard.php" class="<?php echo basename($_SERVER['PHP_SELF']) == 'staff_dashboard.php' ? 'active' : ''; ?>">Staff Home</a>
         <?php endif; ?>
         
-        <a href="logout.php" class="logout">Logout</a>
+        <a href="orders.php" class="<?php echo basename($_SERVER['PHP_SELF']) == 'orders.php' ? 'active' : ''; ?>">Manage Orders</a>
+        
+        <?php if($_SESSION['admin_role'] === 'admin'): ?>
+            <a href="products.php" class="<?php echo basename($_SERVER['PHP_SELF']) == 'products.php' ? 'active' : ''; ?>">Products (CRUD)</a>
+            <a href="customers.php" class="<?php echo basename($_SERVER['PHP_SELF']) == 'customers.php' ? 'active' : ''; ?>">User Management</a>
+            <a href="settings.php" class="<?php echo basename($_SERVER['PHP_SELF']) == 'settings.php' ? 'active' : ''; ?>">System Security</a>
+        <?php endif; ?>
+        
+        <a href="logout.php" style="margin-top: auto; background-color: #c82333;">Logout</a>
     </div>
 
     <div class="content">
