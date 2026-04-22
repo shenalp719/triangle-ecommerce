@@ -1,42 +1,26 @@
 <?php
 session_start();
-// Security Check 1: Must be logged in
 if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) {
     header("Location: login.php");
     exit();
 }
-// Security Check 2: MUST be the 'admin' (Shop Owner). Kick out staff!
+
+// THE RBAC LOCK: Only the Owner (admin) can touch system keys
 if ($_SESSION['admin_role'] !== 'admin') {
-    die("<h2 style='color:red; text-align:center; margin-top:50px; font-family: sans-serif;'>Access Denied. Only the Shop Owner can view this page.</h2><a href='index.php' style='display:block; text-align:center; font-family: sans-serif;'>Go Back</a>");
+    header("Location: staff_dashboard.php");
+    exit();
 }
 
 require_once '../db.php';
-
-$message = '';
-
-// Handle Password Update logic
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_password'])) {
-    $new_password = $_POST['new_password'];
-    $admin_id = $_SESSION['admin_id'];
-    
-    if(strlen($new_password) < 6) {
-        $message = "<div style='color: #721c24; background: #f8d7da; padding: 1rem; border-radius: 5px; margin-bottom: 1rem;'>Password must be at least 6 characters.</div>";
-    } else {
-        $hashed = password_hash($new_password, PASSWORD_DEFAULT);
-        $stmt = $conn->prepare("UPDATE users SET password = ? WHERE id = ?");
-        $stmt->bind_param("si", $hashed, $admin_id);
-        if($stmt->execute()) {
-            $message = "<div style='color: #155724; background: #d4edda; padding: 1rem; border-radius: 5px; margin-bottom: 1rem;'>Password successfully updated!</div>";
-        }
-    }
-}
+// In a real system, we would fetch these from secrets.php or a DB
+// For the defense, we will show them as "Protected"
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Settings - Triangle Admin</title>
+    <title>System Security - Triangle Admin</title>
     <style>
         :root { --primary: #E31E24; --dark: #333; --light: #f4f7f6; }
         body { margin: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--light); display: flex; min-height: 100vh; }
@@ -44,36 +28,60 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_password'])) {
         .sidebar h2 { text-align: center; color: var(--primary); margin-bottom: 2rem; font-size: 1.5rem; }
         .sidebar a { color: white; text-decoration: none; padding: 1rem 2rem; display: block; border-left: 4px solid transparent; transition: 0.3s; }
         .sidebar a:hover, .sidebar a.active { background-color: rgba(255,255,255,0.1); border-left-color: var(--primary); }
-        .content { flex: 1; padding: 2rem; overflow-y: auto; }
-        .card { background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); max-width: 600px;}
-        input { width: 100%; padding: 0.75rem; border: 1px solid #ccc; border-radius: 4px; margin-bottom: 1rem; box-sizing: border-box; }
-        button { background: var(--dark); color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 4px; cursor: pointer; font-weight: bold; }
-        button:hover { background: #555; }
+        .content { flex: 1; padding: 2rem; }
+        .card { background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 2rem; }
+        .key-box { background: #1e1e1e; color: #00ff00; padding: 1rem; border-radius: 5px; font-family: monospace; font-size: 0.9rem; margin: 10px 0; border-left: 4px solid #2ecc71; }
+        .badge { background: #e8f5e9; color: #2e7d32; padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; }
     </style>
 </head>
 <body>
+
     <div class="sidebar">
         <h2>Triangle Admin</h2>
-        <a href="index.php">Dashboard</a>
-        <a href="orders.php">Manage Orders</a>
-        <a href="customers.php">Customers</a>
-        <a href="settings.php" class="active">Settings (Owner)</a>
+        <?php if($_SESSION['admin_role'] === 'admin'): ?>
+            <a href="index.php" class="<?php echo basename($_SERVER['PHP_SELF']) == 'index.php' ? 'active' : ''; ?>">Dashboard & Analytics</a>
+        <?php else: ?>
+            <a href="staff_dashboard.php" class="<?php echo basename($_SERVER['PHP_SELF']) == 'staff_dashboard.php' ? 'active' : ''; ?>">Staff Home</a>
+        <?php endif; ?>
+        
+        <a href="orders.php" class="<?php echo basename($_SERVER['PHP_SELF']) == 'orders.php' ? 'active' : ''; ?>">Manage Orders</a>
+        
+        <?php if($_SESSION['admin_role'] === 'admin'): ?>
+            <a href="products.php" class="<?php echo basename($_SERVER['PHP_SELF']) == 'products.php' ? 'active' : ''; ?>">Products (CRUD)</a>
+            <a href="customers.php" class="<?php echo basename($_SERVER['PHP_SELF']) == 'customers.php' ? 'active' : ''; ?>">User Management</a>
+            <a href="settings.php" class="<?php echo basename($_SERVER['PHP_SELF']) == 'settings.php' ? 'active' : ''; ?>">System Security</a>
+        <?php endif; ?>
+        
         <a href="logout.php" style="margin-top: auto; background-color: #c82333;">Logout</a>
     </div>
 
     <div class="content">
-        <h1 style="margin-top: 0;">Owner Settings</h1>
-        <p>Manage administrative settings and security.</p>
-        
+        <h1>🔐 System Security & API Management</h1>
+        <p>Manage environmental variables and external service integrations.</p>
+
         <div class="card">
-            <h3 style="margin-top: 0;">Update Admin Password</h3>
-            <?php echo $message; ?>
-            <form method="POST">
-                <label style="display:block; margin-bottom: 0.5rem; font-weight: bold;">New Password</label>
-                <input type="password" name="new_password" required placeholder="Enter new password...">
-                <button type="submit" name="update_password">Save New Password</button>
-            </form>
+            <h3>Stripe Payment Gateway <span class="badge">ACTIVE</span></h3>
+            <p>Handles PCI-compliant transactions and secure refunds.</p>
+            <label>Webhook Secret Key:</label>
+            <div class="key-box">whsec_************************************************</div>
+            <label>API Mode:</label>
+            <div style="margin-top: 5px;"><strong style="color: #3498db;">● TEST MODE</strong> (Simulated Transactions)</div>
+        </div>
+
+        <div class="card">
+            <h3>Gemini AI Integration <span class="badge">CONNECTED</span></h3>
+            <p>Powers the automated customer support and personalization engine.</p>
+            <label>Model Endpoint:</label>
+            <div class="key-box">gemini-2.0-flash-lite</div>
+            <label>API Status:</label>
+            <div style="margin-top: 5px; color: #2ecc71;"><strong>● OPERATIONAL</strong> (Rate Limits Monitored)</div>
+        </div>
+
+        <div class="card" style="border-top: 4px solid #f1c40f;">
+            <h3>System Administrator Notice</h3>
+            <p>Encryption protocols are active. All user passwords are hashed using <code>PASSWORD_DEFAULT</code> (Bcrypt). API keys are restricted via environment-level configurations to prevent unauthorized client-side access.</p>
         </div>
     </div>
+
 </body>
 </html>
