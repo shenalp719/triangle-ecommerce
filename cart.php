@@ -85,57 +85,55 @@ include 'includes/header.php';
 
     <script>
         async function startStripeCheckout() {
-            // 1. Get items from your app.js global state
-            const cartItems = app.getCartItems();
-            
-            if (cartItems.length === 0) {
-                app.showNotification('Your cart is empty!', 'warning');
-                return;
-            }
-
-            // 2. Calculate the exact grand total (including tax and shipping)
-            const subtotal = app.getCartTotal();
-            const tax = subtotal * 0.08; // 8% tax
-            const shipping = subtotal > 150 ? 0 : 15; // Free shipping over $150
-            const grandTotal = subtotal + tax + shipping;
-
-            // 3. Update UI to show loading state
-            const btn = document.querySelector('button[onclick="startStripeCheckout()"]');
-            const originalText = btn.innerHTML;
-            btn.innerHTML = 'Redirecting to Secure Checkout...';
-            btn.disabled = true;
-            btn.style.backgroundColor = '#666';
-
-            try {
-                // 4. Send the total to your backend
-                const response = await fetch('checkout.php', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        total: grandTotal,
-                        itemCount: cartItems.length
-                    })
-                });
-
-                const session = await response.json();
-
-                if (session.error) {
-                    app.showNotification('Error: ' + session.error, 'error');
-                    btn.innerHTML = originalText;
-                    btn.disabled = false;
-                    btn.style.backgroundColor = 'var(--primary)';
-                } else {
-                    // 5. Redirect to Stripe!
-                    window.location.href = session.url;
-                }
-            } catch (error) {
-                console.error("Error:", error);
-                app.showNotification('Checkout failed. Please try again.', 'error');
-                btn.innerHTML = originalText;
-                btn.disabled = false;
-                btn.style.backgroundColor = 'var(--primary)';
-            }
+        const items = appState.cart;
+        
+        if (items.length === 0) {
+            alert('Your cart is empty');
+            return;
         }
+        
+        // 1. Do the math so checkout.php doesn't crash
+        const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        const shipping = subtotal > 0 ? 15 : 0;
+        const tax = subtotal * 0.08;
+        const finalTotal = subtotal + shipping + tax;
+        
+        // 2. Package it perfectly
+        const orderData = {
+            items: items,
+            total: finalTotal,
+            itemCount: items.reduce((sum, item) => sum + item.quantity, 0)
+        };
+        
+        try {
+            // Change button text
+            const checkoutBtn = document.querySelector('.checkout-btn');
+            if (checkoutBtn) checkoutBtn.innerText = 'Connecting...';
+
+            // 3. Send it to checkout.php WITH credentials!
+            const response = await fetch('/triangle-ecommerce/checkout.php', {
+                method: 'POST',
+                credentials: 'same-origin', // The magic handshake
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(orderData)
+            });
+            
+            const result = await response.json();
+            
+            if (result.url) {
+                window.location.href = result.url;
+            } else {
+                console.error("Server Error:", result);
+                alert('Error: ' + (result.error || 'Could not reach Stripe.'));
+                if (checkoutBtn) checkoutBtn.innerText = 'Proceed to Checkout';
+            }
+        } catch (error) {
+            console.error('Fetch Error:', error);
+            alert('Network error. Please try again.');
+        }
+    }
     </script>
 
 <?php include 'includes/footer.php'; ?>

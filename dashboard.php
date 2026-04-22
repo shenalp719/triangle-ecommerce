@@ -25,6 +25,10 @@ $orders = $ordersResult ? $ordersResult->fetch_all(MYSQLI_ASSOC) : [];
 $designsResult = executeQuery("SELECT * FROM designs WHERE user_id = $user_id ORDER BY created_at DESC");
 $designs = $designsResult ? $designsResult->fetch_all(MYSQLI_ASSOC) : [];
 
+// Fetch the user's order history
+$user_id = $_SESSION['user_id'];
+$orders_query = $conn->query("SELECT * FROM orders WHERE user_id = $user_id ORDER BY created_at DESC");
+
 $page_title = 'My Dashboard';
 include 'includes/header.php';
 ?>
@@ -195,6 +199,54 @@ include 'includes/header.php';
             <?php else: ?>
                 <div class="alert alert-info">
                     No saved designs yet. <a href="products.php">Create your first design!</a>
+                </div>
+            <?php endif; ?>
+        </div>
+        <div style="margin-top: 3rem; margin-bottom: 3rem;">
+            <h3 style="margin-bottom: 1rem;">My Order History</h3>
+            
+            <?php if ($orders_query && $orders_query->num_rows > 0): ?>
+                <div class="card" style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); overflow-x: auto;">
+                    <table style="width: 100%; border-collapse: collapse; min-width: 600px;">
+                        <tr>
+                            <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background-color: #f9f9f9; color: #555;">Order #</th>
+                            <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background-color: #f9f9f9; color: #555;">Date</th>
+                            <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background-color: #f9f9f9; color: #555;">Total</th>
+                            <th style="padding: 1rem; text-align: left; border-bottom: 2px solid #eee; background-color: #f9f9f9; color: #555;">Live Status</th>
+                        </tr>
+                        <?php while($order = $orders_query->fetch_assoc()): ?>
+                            <tr style="transition: background-color 0.2s;">
+                                <td style="padding: 1rem; border-bottom: 1px solid #eee; font-family: monospace; font-size: 1.1rem;">
+                                    <strong><?php echo htmlspecialchars($order['order_number']); ?></strong>
+                                </td>
+                                <td style="padding: 1rem; border-bottom: 1px solid #eee;">
+                                    <?php echo date('M d, Y', strtotime($order['created_at'])); ?>
+                                </td>
+                                <td style="padding: 1rem; border-bottom: 1px solid #eee; font-weight: bold;">
+                                    $<?php echo number_format($order['total_amount'], 2); ?>
+                                </td>
+                                <td style="padding: 1rem; border-bottom: 1px solid #eee;">
+                                    <?php 
+                                        // Dynamic color coding based on the status the admin sets!
+                                        $status = strtolower($order['status']);
+                                        $bg_color = '#f1f4f6'; $text_color = '#555';
+                                        if ($status == 'pending') { $bg_color = '#fdf3d8'; $text_color = '#f39c12'; }
+                                        if ($status == 'printing') { $bg_color = '#d6eaf8'; $text_color = '#3498db'; }
+                                        if ($status == 'ready') { $bg_color = '#d4edda'; $text_color = '#2ecc71'; }
+                                    ?>
+                                    <span style="background-color: <?php echo $bg_color; ?>; color: <?php echo $text_color; ?>; padding: 6px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;">
+                                        <?php echo htmlspecialchars($order['status']); ?>
+                                    </span>
+                                </td>
+                            </tr>
+                        <?php endwhile; ?>
+                    </table>
+                </div>
+            <?php else: ?>
+                <div style="background-color: var(--light-gray); color: var(--text-light); padding: 2rem; border-radius: 8px; text-align: center; border: 1px dashed var(--border-color);">
+                    <svg style="width: 48px; height: 48px; color: #ccc; margin-bottom: 1rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
+                    <p style="margin: 0; font-size: 1.1rem;">You haven't placed any orders yet.</p>
+                    <a href="index.php" style="color: var(--primary-red); text-decoration: none; font-weight: bold; display: inline-block; margin-top: 0.5rem;">Start customizing &rarr;</a>
                 </div>
             <?php endif; ?>
         </div>

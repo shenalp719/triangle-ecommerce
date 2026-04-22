@@ -329,32 +329,63 @@ cartStyles.textContent = `
 `;
 document.head.appendChild(cartStyles);
 
-// ========== API FUNCTIONS ==========
-async function proceedToCheckout() {
-    const items = appState.cart;
-    
-    if (items.length === 0) {
-        app.showNotification('Your cart is empty', 'warning');
-        return;
+    // ========== API FUNCTIONS ==========
+    async function proceedToCheckout() {
+        const items = appState.cart;
+        
+        if (items.length === 0) {
+            if (typeof app !== 'undefined' && app.showNotification) {
+                app.showNotification('Your cart is empty', 'warning');
+            } else {
+                alert('Your cart is empty');
+            }
+            return;
+        }
+        
+        // Calculate the exact total (with tax & shipping) so Stripe charges the correct amount!
+        const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        const shipping = subtotal > 0 ? 15 : 0;
+        const tax = subtotal * 0.08;
+        const finalTotal = subtotal + shipping + tax;
+        
+        // Prepare order data EXACTLY as checkout.php expects it
+        const orderData = {
+            items: items,
+            total: finalTotal, // Must match $body->total in PHP
+            itemCount: items.reduce((sum, item) => sum + item.quantity, 0) // Must match $body->itemCount
+        };
+        
+        try {
+            // Change button text so the user knows it's loading
+            const checkoutBtn = document.querySelector('.checkout-btn') || document.querySelector('.cart-summary button');
+            if (checkoutBtn) checkoutBtn.innerText = 'Connecting to Secure Checkout...';
+
+            // Send directly to the PHP file we just upgraded!
+            const response = await fetch('/triangle-ecommerce/checkout.php', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(orderData)
+            });
+            
+            const result = await response.json();
+            
+            if (result.url) {
+                // Success! Send the customer to the Stripe payment page
+                window.location.href = result.url;
+            } else {
+                console.error("Stripe Error:", result);
+                alert('Checkout Error: ' + (result.error || 'Could not generate payment link.'));
+                if (checkoutBtn) checkoutBtn.innerText = 'Proceed to Checkout';
+            }
+        } catch (error) {
+            console.error('Fetch Error:', error);
+            alert('Failed to connect to the checkout server. Check your network.');
+        }
     }
-    
-    // Prepare order data
-    const orderData = {
-        items: items,
-        subtotal: items.reduce((sum, item) => sum + (item.price * item.quantity), 0)
-    };
-    
-    // Send to server
-    const result = await app.fetchAPI('/triangle-ecommerce/api/create-order.php', {
-        method: 'POST',
-        body: JSON.stringify(orderData)
-    });
-    
-    if (result && result.success) {
-        app.clearCart();
-        window.location.href = `/triangle-ecommerce/checkout.php?order=${result.orderId}`;
-    }
-}
 
 // Make functions globally available
 window.proceedToCheckout = proceedToCheckout;
+
