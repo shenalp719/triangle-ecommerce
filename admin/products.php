@@ -1,107 +1,175 @@
 <?php
-/**
- * Admin Products Management
- */
 session_start();
-require_once '../db.php';
-
-if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
-    header('Location: /triangle-ecommerce/login.php');
+if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) {
+    header("Location: login.php");
     exit();
 }
+require_once '../db.php';
 
-// Get all products
-$productsResult = executeQuery("SELECT * FROM products ORDER BY created_at DESC");
-$products = $productsResult ? $productsResult->fetch_all(MYSQLI_ASSOC) : [];
+$message = '';
+
+// 1. Handle Delete Operation
+if (isset($_GET['delete'])) {
+    $id = intval($_GET['delete']);
+    $conn->query("DELETE FROM products WHERE id = $id");
+    $message = "<div style='background: #d4edda; color: #155724; padding: 1rem; border-radius: 5px; margin-bottom: 1rem;'>Product deleted successfully!</div>";
+}
+
+// 2. Handle Create & Update Operations
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_product'])) {
+    $name = trim($_POST['name']);
+    $category = trim($_POST['category']);
+    $base_price = floatval($_POST['base_price']);
+    $available = isset($_POST['available']) ? 1 : 0;
+    $description = trim($_POST['description']);
+    // Setting default empty JSON for specifications to prevent database errors
+    $specifications = '{}'; 
+
+    if (!empty($_POST['product_id'])) {
+        // UPDATE Existing Product
+        $id = intval($_POST['product_id']);
+        $stmt = $conn->prepare("UPDATE products SET name=?, category=?, base_price=?, available=?, description=? WHERE id=?");
+        $stmt->bind_param("ssdisi", $name, $category, $base_price, $available, $description, $id);
+        if($stmt->execute()) {
+            $message = "<div style='background: #d4edda; color: #155724; padding: 1rem; border-radius: 5px; margin-bottom: 1rem;'>Product updated successfully!</div>";
+        }
+    } else {
+        // CREATE New Product
+        $stmt = $conn->prepare("INSERT INTO products (name, category, base_price, available, description, specifications) VALUES (?, ?, ?, ?, ?, ?)");
+        $stmt->bind_param("ssdiss", $name, $category, $base_price, $available, $description, $specifications);
+        if($stmt->execute()) {
+            $message = "<div style='background: #d4edda; color: #155724; padding: 1rem; border-radius: 5px; margin-bottom: 1rem;'>New product added to inventory!</div>";
+        }
+    }
+}
+
+// Check if we are editing a specific product
+$edit_product = null;
+if (isset($_GET['edit'])) {
+    $id = intval($_GET['edit']);
+    $edit_product = $conn->query("SELECT * FROM products WHERE id = $id")->fetch_assoc();
+}
+
+// Fetch all products for the Read operation
+$products = $conn->query("SELECT * FROM products ORDER BY id DESC");
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Products - Admin Panel</title>
-    <link rel="stylesheet" href="/triangle-ecommerce/assets/css/style.css">
-    <link rel="stylesheet" href="/triangle-ecommerce/assets/css/responsive.css">
+    <title>Inventory CRUD - Triangle Admin</title>
     <style>
-        .admin-container { display: flex; min-height: 100vh; background-color: var(--light-gray); }
-        .admin-sidebar { width: 250px; background-color: var(--dark-gray); color: var(--white); padding: 2rem 0; position: sticky; top: 0; height: 100vh; overflow-y: auto; }
-        .admin-sidebar-item { padding: 1rem 1.5rem; border-left: 4px solid transparent; cursor: pointer; transition: var(--transition); }
-        .admin-sidebar-item:hover, .admin-sidebar-item.active { background-color: rgba(255, 255, 255, 0.1); border-left-color: var(--primary-red); }
-        .admin-sidebar a { color: var(--white); text-decoration: none; display: block; }
-        .admin-content { flex: 1; overflow-y: auto; }
-        .admin-header { background-color: var(--white); padding: 1.5rem 2rem; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
-        .admin-main { padding: 2rem; }
-        .admin-table { background-color: var(--white); border-radius: 0.75rem; overflow: auto; box-shadow: var(--shadow-light); }
-        .admin-table table { width: 100%; border-collapse: collapse; }
-        .admin-table th { background-color: var(--light-gray); padding: 1rem; text-align: left; font-weight: 600; border-bottom: 2px solid var(--border-color); }
-        .admin-table td { padding: 1rem; border-bottom: 1px solid var(--border-color); }
+        :root { --primary: #E31E24; --dark: #333; --light: #f4f7f6; }
+        body { margin: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--light); display: flex; min-height: 100vh; }
+        .sidebar { width: 250px; background-color: var(--dark); color: white; padding: 2rem 0; display: flex; flex-direction: column; flex-shrink: 0;}
+        .sidebar h2 { text-align: center; color: var(--primary); margin-bottom: 2rem; font-size: 1.5rem; }
+        .sidebar a { color: white; text-decoration: none; padding: 1rem 2rem; display: block; border-left: 4px solid transparent; transition: 0.3s; }
+        .sidebar a:hover, .sidebar a.active { background-color: rgba(255,255,255,0.1); border-left-color: var(--primary); }
+        .content { flex: 1; padding: 2rem; overflow-y: auto; }
+        .card { background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 2rem;}
+        table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+        th, td { padding: 1rem; text-align: left; border-bottom: 1px solid #eee; }
+        th { background-color: #f9f9f9; color: #555; }
+        .btn { padding: 0.5rem 1rem; border: none; border-radius: 4px; cursor: pointer; text-decoration: none; font-size: 0.9rem; display: inline-block;}
+        .btn-primary { background: var(--dark); color: white; }
+        .btn-edit { background: #3498db; color: white; }
+        .btn-delete { background: #e74c3c; color: white; }
+        input, select, textarea { width: 100%; padding: 0.75rem; border: 1px solid #ccc; border-radius: 4px; margin-bottom: 1rem; box-sizing: border-box; font-family: inherit;}
     </style>
 </head>
 <body>
-    <div class="admin-container">
-        <aside class="admin-sidebar">
-            <div style="padding: 0 1.5rem; margin-bottom: 2rem;">
-                <h3 style="color: var(--primary-red);">△ ADMIN</h3>
-            </div>
-            <a href="/triangle-ecommerce/admin/" class="admin-sidebar-item">Dashboard</a>
-            <a href="/triangle-ecommerce/admin/orders.php" class="admin-sidebar-item">Orders</a>
-            <a href="/triangle-ecommerce/admin/customers.php" class="admin-sidebar-item">Customers</a>
-            <a href="/triangle-ecommerce/admin/products.php" class="admin-sidebar-item active">Products</a>
-            <a href="/triangle-ecommerce/admin/designs.php" class="admin-sidebar-item">Designs</a>
-            <a href="/triangle-ecommerce/admin/settings.php" class="admin-sidebar-item">Settings</a>
-            <hr style="border: none; border-top: 1px solid rgba(255, 255, 255, 0.1); margin: 2rem 0;">
-            <a href="/triangle-ecommerce/logout.php" class="admin-sidebar-item" style="color: #E74C3C;">Logout</a>
-        </aside>
+    <div class="sidebar">
+        <h2>Triangle Admin</h2>
+        <a href="index.php">Dashboard</a>
+        <a href="orders.php">Manage Orders</a>
+        <a href="products.php" class="active">Products (CRUD)</a>
+        <a href="customers.php">Customers</a>
+        <?php if($_SESSION['admin_role'] === 'admin'): ?>
+            <a href="settings.php">Settings (Owner)</a>
+        <?php endif; ?>
+        <a href="logout.php" style="margin-top: auto; background-color: #c82333;">Logout</a>
+    </div>
 
-        <div class="admin-content">
-            <div class="admin-header">
-                <h2>Products Management</h2>
-                <button class="btn btn-primary btn-sm" onclick="alert('Add product functionality coming soon!')">+ Add Product</button>
-            </div>
+    <div class="content">
+        <h1 style="margin-top: 0;">Inventory & Pricing Management</h1>
+        <p>Control storefront items, categories, and adjust base pricing.</p>
 
-            <div class="admin-main">
-                <div class="admin-table">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Name</th>
-                                <th>Category</th>
-                                <th>Price</th>
-                                <th>Status</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php if (count($products) > 0): ?>
-                                <?php foreach ($products as $product): ?>
-                                    <tr>
-                                        <td><strong><?php echo htmlspecialchars($product['name']); ?></strong></td>
-                                        <td><?php echo ucfirst($product['category']); ?></td>
-                                        <td>$<?php echo number_format($product['base_price'], 2); ?></td>
-                                        <td>
-                                            <span class="badge" style="background-color: <?php echo $product['available'] ? '#27AE60' : '#E74C3C'; ?>; color: white;">
-                                                <?php echo $product['available'] ? 'Available' : 'Inactive'; ?>
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <a href="#" onclick="alert('Edit functionality coming soon!')" style="color: var(--primary-red); margin-right: 1rem;">Edit</a>
-                                            <a href="#" onclick="alert('Delete functionality coming soon!')" style="color: #E74C3C;">Delete</a>
-                                        </td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            <?php else: ?>
-                                <tr>
-                                    <td colspan="5" style="text-align: center; padding: 2rem;">No products found</td>
-                                </tr>
-                            <?php endif; ?>
-                        </tbody>
-                    </table>
+        <?php echo $message; ?>
+
+        <div class="card">
+            <h3 style="margin-top: 0;"><?php echo $edit_product ? 'Edit Product' : 'Add New Product'; ?></h3>
+            <form method="POST" action="products.php">
+                <input type="hidden" name="product_id" value="<?php echo $edit_product ? $edit_product['id'] : ''; ?>">
+                
+                <div style="display: flex; gap: 1rem;">
+                    <div style="flex: 1;">
+                        <label>Product Name</label>
+                        <input type="text" name="name" required value="<?php echo $edit_product ? htmlspecialchars($edit_product['name']) : ''; ?>">
+                    </div>
+                    <div style="flex: 1;">
+                        <label>Category</label>
+                        <input type="text" name="category" required value="<?php echo $edit_product ? htmlspecialchars($edit_product['category']) : ''; ?>">
+                    </div>
                 </div>
-            </div>
+
+                <div style="display: flex; gap: 1rem; align-items: center;">
+                    <div style="flex: 1;">
+                        <label>Base Price ($)</label>
+                        <input type="number" step="0.01" name="base_price" required value="<?php echo $edit_product ? $edit_product['base_price'] : ''; ?>">
+                    </div>
+                    <div style="flex: 1;">
+                        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                            <input type="checkbox" name="available" value="1" style="width: auto; margin: 0;" <?php echo ($edit_product && $edit_product['available'] == 1) ? 'checked' : ''; ?>>
+                            Available in Storefront
+                        </label>
+                    </div>
+                </div>
+
+                <label>Description</label>
+                <textarea name="description" rows="3"><?php echo $edit_product ? htmlspecialchars($edit_product['description']) : ''; ?></textarea>
+
+                <button type="submit" name="save_product" class="btn btn-primary">
+                    <?php echo $edit_product ? 'Update Inventory' : 'Add to Inventory'; ?>
+                </button>
+                <?php if($edit_product): ?>
+                    <a href="products.php" class="btn" style="background: #ccc; color: #333;">Cancel Edit</a>
+                <?php endif; ?>
+            </form>
+        </div>
+
+        <div class="card">
+            <h3 style="margin-top: 0;">Current Storefront Inventory</h3>
+            <table>
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Category</th>
+                    <th>Price</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+                <?php while($row = $products->fetch_assoc()): ?>
+                    <tr>
+                        <td>#<?php echo $row['id']; ?></td>
+                        <td><strong><?php echo htmlspecialchars($row['name']); ?></strong></td>
+                        <td><?php echo htmlspecialchars($row['category']); ?></td>
+                        <td>$<?php echo number_format($row['base_price'], 2); ?></td>
+                        <td>
+                            <?php if($row['available'] == 1): ?>
+                                <span style="background: #d4edda; color: #155724; padding: 3px 8px; border-radius: 10px; font-size: 0.8rem;">Active</span>
+                            <?php else: ?>
+                                <span style="background: #f8d7da; color: #721c24; padding: 3px 8px; border-radius: 10px; font-size: 0.8rem;">Hidden</span>
+                            <?php endif; ?>
+                        </td>
+                        <td>
+                            <a href="products.php?edit=<?php echo $row['id']; ?>" class="btn btn-edit">Edit</a>
+                            <a href="products.php?delete=<?php echo $row['id']; ?>" class="btn btn-delete" onclick="return confirm('Are you sure you want to delete this product?');">Delete</a>
+                        </td>
+                    </tr>
+                <?php endwhile; ?>
+            </table>
         </div>
     </div>
 </body>
 </html>
-<?php
-?>

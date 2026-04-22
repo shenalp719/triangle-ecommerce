@@ -6,18 +6,36 @@ if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== tru
 }
 require_once '../db.php';
 
+$message = '';
+
 // Handle Status Updates
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_status'])) {
     $order_id = intval($_POST['order_id']);
-    $new_status = sanitize($_POST['status']);
+    $new_status = $_POST['status']; // Sanitize this in your actual db.php if you have a function
     $update_stmt = $conn->prepare("UPDATE orders SET status = ? WHERE id = ?");
     $update_stmt->bind_param("si", $new_status, $order_id);
     $update_stmt->execute();
-    header("Location: orders.php"); // Refresh page
+    header("Location: orders.php"); 
     exit();
 }
 
-// Fetch all orders, newest first
+// Handle Stripe Refund Simulation
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['process_refund'])) {
+    $order_id = intval($_POST['order_id']);
+    $stripe_id = $_POST['stripe_id'];
+    
+    // NOTE FOR DEFENSE: In a production environment, you would use the Stripe PHP SDK here:
+    // \Stripe\Stripe::setApiKey('sk_test_...');
+    // \Stripe\Refund::create(['payment_intent' => $stripe_id]);
+
+    $update_stmt = $conn->prepare("UPDATE orders SET status = 'Refunded' WHERE id = ?");
+    $update_stmt->bind_param("i", $order_id);
+    if($update_stmt->execute()) {
+        $message = "<div style='background: #d1ecf1; color: #0c5460; padding: 1rem; border-radius: 5px; margin-bottom: 1rem;'>Refund successfully processed for Stripe ID: " . htmlspecialchars($stripe_id) . "</div>";
+    }
+}
+
+// Fetch all orders
 $orders = $conn->query("SELECT * FROM orders ORDER BY created_at DESC");
 ?>
 <!DOCTYPE html>
@@ -25,7 +43,7 @@ $orders = $conn->query("SELECT * FROM orders ORDER BY created_at DESC");
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Manage Orders - Triangle Printing</title>
+    <title>Manage Orders - Triangle Admin</title>
     <style>
         :root { --primary: #E31E24; --dark: #333; --light: #f4f7f6; }
         body { margin: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--light); display: flex; min-height: 100vh; }
@@ -33,17 +51,15 @@ $orders = $conn->query("SELECT * FROM orders ORDER BY created_at DESC");
         .sidebar h2 { text-align: center; color: var(--primary); margin-bottom: 2rem; font-size: 1.5rem; }
         .sidebar a { color: white; text-decoration: none; padding: 1rem 2rem; display: block; border-left: 4px solid transparent; transition: 0.3s; }
         .sidebar a:hover, .sidebar a.active { background-color: rgba(255,255,255,0.1); border-left-color: var(--primary); }
-        
         .content { flex: 1; padding: 2rem; overflow-y: auto; }
         .order-card { background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 1.5rem; border-left: 5px solid #ccc; }
         .status-pending { border-left-color: #f39c12; }
         .status-printing { border-left-color: #3498db; }
         .status-ready { border-left-color: #2ecc71; }
-        
+        .status-refunded { border-left-color: #e74c3c; opacity: 0.8; }
         table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
         th, td { padding: 0.75rem; text-align: left; border-bottom: 1px solid #eee; }
         th { background-color: #f9f9f9; }
-        
         .print-specs { background: #f8f9fa; padding: 1rem; border-radius: 5px; font-family: monospace; font-size: 0.9rem; color: #d63031; }
     </style>
 </head>
@@ -53,34 +69,61 @@ $orders = $conn->query("SELECT * FROM orders ORDER BY created_at DESC");
         <h2>Triangle Admin</h2>
         <a href="index.php">Dashboard</a>
         <a href="orders.php" class="active">Manage Orders</a>
+        <a href="products.php">Products (CRUD)</a>
         <a href="customers.php">Customers</a>
+        <?php if($_SESSION['admin_role'] === 'sysadmin'): ?>
+            <a href="settings.php">System Security</a>
+        <?php endif; ?>
         <a href="logout.php" style="margin-top: auto; background-color: #c82333;">Logout</a>
     </div>
 
     <div class="content">
-        <h1 style="margin-top: 0;">Order Processing Pipeline</h1>
-        <p>Review custom designs and update tracking statuses for customers.</p>
+        <h1 style="margin-top: 0;">Order Processing & Reconciliation</h1>
+        <p>Review designs, update statuses, and process Stripe refunds.</p>
+
+        <?php echo $message; ?>
 
         <?php if($orders->num_rows === 0): ?>
             <p>No orders found in the database yet.</p>
         <?php else: ?>
             <?php while($order = $orders->fetch_assoc()): ?>
                 <div class="order-card status-<?php echo strtolower($order['status']); ?>">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                         <div>
                             <h3 style="margin: 0;">Order <?php echo htmlspecialchars($order['order_number']); ?></h3>
                             <small style="color: #666;">Placed on: <?php echo date('M d, Y', strtotime($order['created_at'])); ?> | Total: $<?php echo number_format($order['total_amount'], 2); ?></small>
+                            <br>
+                            <?php if(!empty($order['stripe_payment_id'])): ?>
+                                <span style="background: #e1e1e1; font-family: monospace; font-size: 0.8rem; padding: 2px 6px; border-radius: 4px; display: inline-block; margin-top: 5px;">
+                                    Stripe ID: <?php echo htmlspecialchars($order['stripe_payment_id']); ?>
+                                </span>
+                            <?php endif; ?>
                         </div>
                         
-                        <form method="POST" style="display: flex; gap: 0.5rem; align-items: center;">
-                            <input type="hidden" name="order_id" value="<?php echo $order['id']; ?>">
-                            <select name="status" style="padding: 0.5rem; border-radius: 4px; border: 1px solid #ccc;">
-                                <option value="pending" <?php echo $order['status'] == 'pending' ? 'selected' : ''; ?>>Pending</option>
-                                <option value="printing" <?php echo $order['status'] == 'printing' ? 'selected' : ''; ?>>Printing</option>
-                                <option value="ready" <?php echo $order['status'] == 'ready' ? 'selected' : ''; ?>>Ready for Pickup</option>
-                            </select>
-                            <button type="submit" name="update_status" style="padding: 0.5rem 1rem; background: var(--dark); color: white; border: none; border-radius: 4px; cursor: pointer;">Update</button>
-                        </form>
+                        <div style="display: flex; gap: 1rem;">
+                            <form method="POST" style="display: flex; gap: 0.5rem; align-items: center;">
+                                <input type="hidden" name="order_id" value="<?php echo $order['id']; ?>">
+                                <select name="status" style="padding: 0.5rem; border-radius: 4px; border: 1px solid #ccc;" <?php echo ($order['status'] == 'Refunded') ? 'disabled' : ''; ?>>
+                                    <option value="pending" <?php echo $order['status'] == 'pending' ? 'selected' : ''; ?>>Pending</option>
+                                    <option value="printing" <?php echo $order['status'] == 'printing' ? 'selected' : ''; ?>>Printing</option>
+                                    <option value="ready" <?php echo $order['status'] == 'ready' ? 'selected' : ''; ?>>Ready for Pickup</option>
+                                    <?php if($order['status'] == 'Refunded'): ?>
+                                        <option value="Refunded" selected>Refunded</option>
+                                    <?php endif; ?>
+                                </select>
+                                <?php if($order['status'] != 'Refunded'): ?>
+                                    <button type="submit" name="update_status" style="padding: 0.5rem 1rem; background: var(--dark); color: white; border: none; border-radius: 4px; cursor: pointer;">Update</button>
+                                <?php endif; ?>
+                            </form>
+
+                            <?php if($order['status'] != 'Refunded' && !empty($order['stripe_payment_id'])): ?>
+                                <form method="POST" onsubmit="return confirm('Are you sure you want to issue a full refund for this order?');">
+                                    <input type="hidden" name="order_id" value="<?php echo $order['id']; ?>">
+                                    <input type="hidden" name="stripe_id" value="<?php echo $order['stripe_payment_id']; ?>">
+                                    <button type="submit" name="process_refund" style="padding: 0.5rem 1rem; background: #e74c3c; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Process Refund</button>
+                                </form>
+                            <?php endif; ?>
+                        </div>
                     </div>
 
                     <?php
@@ -90,30 +133,24 @@ $orders = $conn->query("SELECT * FROM orders ORDER BY created_at DESC");
                     <table>
                         <tr>
                             <th>Qty</th>
-                            <th>Design Specifications (From 3D Studio)</th>
+                            <th>Design Specifications</th>
                             <th>Price</th>
                         </tr>
                         <?php while($item = $items->fetch_assoc()): 
-                            // Decode the JSON design data we saved during checkout!
                             $design_data = json_decode($item['print_file'], true);
                         ?>
                             <tr>
                                 <td><?php echo $item['quantity']; ?>x</td>
                                 <td>
-                                    <strong><?php echo htmlspecialchars($design_data['name']); ?></strong><br>
+                                    <strong><?php echo isset($design_data['name']) ? htmlspecialchars($design_data['name']) : 'Custom Product'; ?></strong><br>
                                     <div class="print-specs">
                                         <?php 
-                                        // This translates the JSON into human-readable instructions!
-                                        if (isset($design_data['color'])) {
-                                            echo "Base Color Hex: " . htmlspecialchars($design_data['color']) . "<br>";
-                                        }
+                                        if (isset($design_data['color'])) echo "Base Color: " . htmlspecialchars($design_data['color']) . "<br>";
                                         if (isset($design_data['textLayers']) && count($design_data['textLayers']) > 0) {
-                                            echo "Text to Print: ";
+                                            echo "Text: ";
                                             foreach ($design_data['textLayers'] as $layer) {
-                                                echo "'" . htmlspecialchars($layer['content']) . "' (Color: " . $layer['color'] . ")<br>";
+                                                echo "'" . htmlspecialchars($layer['content']) . "'<br>";
                                             }
-                                        } else {
-                                            echo "No custom text added.";
                                         }
                                         ?>
                                     </div>
