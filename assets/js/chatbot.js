@@ -64,26 +64,39 @@ function initializeChatbot() {
     });
 }
 
-// ========== SEND MESSAGE ==========
-function sendChatMessage() {
+// ========== SEND MESSAGE (UPGRADED FOR REAL AI) ==========
+async function sendChatMessage() {
     const input = document.getElementById('chatbot-input');
     const message = input.value.trim();
     
     if (!message) return;
     
-    // Add user message
+    // 1. Add user message to UI
     addChatMessage(message, 'user');
     input.value = '';
     
-    // Show typing indicator
+    // 2. Show typing indicator
     addTypingIndicator();
     
-    // Get bot response
-    setTimeout(() => {
+    try {
+        // 3. Send message securely to our PHP backend
+        const response = await fetch('/triangle-ecommerce/api/chat.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: message })
+        });
+        
+        const data = await response.json();
+        
+        // 4. Remove typing indicator and show AI response
         removeTypingIndicator();
-        const response = getBotResponse(message);
-        addChatMessage(response, 'bot');
-    }, 800);   
+        addChatMessage(data.reply, 'bot');
+        
+    } catch (error) {
+        console.error("Chatbot Error:", error);
+        removeTypingIndicator();
+        addChatMessage("Sorry, my connection was interrupted. Please try asking again!", 'bot');
+    }
     
     trackEvent('chatbot_message_sent', { message: message });
 }

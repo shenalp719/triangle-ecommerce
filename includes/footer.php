@@ -39,6 +39,10 @@
         <div class="footer-bottom">
             <p>&copy; 2026 Triangle Printing Solutions. All rights reserved.</p>
         </div>
+
+        <div style="margin-top: 1rem;">
+            <a href="admin/login.php" style="color: #666; text-decoration: none; font-size: 0.8rem;">Staff Portal</a>
+        </div>
     </footer>
 
     <!-- AI Chatbot Widget -->
