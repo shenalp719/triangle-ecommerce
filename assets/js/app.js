@@ -141,17 +141,19 @@ function setupScrollEffects() {
 
 // ========== CART MANAGEMENT ==========
 function addToCart(productId, productName, price, image = null) {
+    // SAFETY NET: If the image is empty or missing, we give it a default mug image
+    const finalImage = (image && image !== '') ? image : 'https://images.unsplash.com/photo-1514228742587-6b1558fcca3d?q=80&w=400';
+
     const cartItem = {
         id: productId + '_' + Date.now(),
         productId: productId,
         name: productName,
         price: parseFloat(price),
         quantity: 1,
-        image: image,
+        image: finalImage, // Use our saved image
         addedAt: new Date().toISOString()
     };
     
-    // Check if item already in cart
     const existingItem = appState.cart.find(item => item.productId === productId);
     
     if (existingItem) {
@@ -162,8 +164,6 @@ function addToCart(productId, productName, price, image = null) {
     
     saveCartToStorage();
     updateCartCount();
-    
-    // Show success message
     showNotification(`${productName} added to cart!`, 'success');
     
     // Track event

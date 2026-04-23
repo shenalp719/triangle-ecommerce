@@ -656,46 +656,50 @@ include 'includes/header.php';
                 document.body.addEventListener('click', async (e) => {
                     
                     // ==========================================
-                    // 1. ADD TO CART LOGIC
-                    // ==========================================
-                    if (e.target && e.target.id === 'add-product-cart') {
-                        e.preventDefault();
-                        console.log("🛒 Add to Cart clicked!");
+                // 1. ADD TO CART LOGIC (FIXED)
+                // ==========================================
+                if (e.target && e.target.id === 'add-product-cart') {
+                    e.preventDefault();
+                    console.log("🛒 Add to Cart clicked!");
 
-                        const productType = (typeof customizer !== 'undefined') ? customizer.productType : 'product';
-                        const basePrice = (typeof customizer !== 'undefined') ? customizer.basePrice : 15.00;
-                        const productName = 'Custom ' + productType.charAt(0).toUpperCase() + productType.slice(1);
+                    const productType = (typeof customizer !== 'undefined') ? customizer.productType : 'product';
+                    const basePrice = (typeof customizer !== 'undefined') ? customizer.basePrice : 12.00;
+                    const productName = 'Custom ' + productType.charAt(0).toUpperCase() + productType.slice(1);
 
-                        if (window.app && window.app.addToCart) {
-                            window.app.addToCart(productType + '_' + Date.now(), productName, basePrice);
-                            window.app.showNotification('Design added to cart!', 'success');
+                    // FIX: Grab the default image URL for the mug
+                    const defaultImage = 'https://images.unsplash.com/photo-1514228742587-6b1558fcca3d?q=80&w=800';
 
-                            e.target.style.display = 'none';
+                    if (window.app && window.app.addToCart) {
+                        // We added 'defaultImage' as the 4th item here!
+                        window.app.addToCart(productType + '_' + Date.now(), productName, basePrice, defaultImage);
+                        window.app.showNotification('Design added to cart!', 'success');
 
-                            const actionsDiv = document.createElement('div');
-                            actionsDiv.id = 'post-cart-actions';
-                            actionsDiv.style.display = 'flex';
-                            actionsDiv.style.gap = '10px';
-                            actionsDiv.style.marginTop = '1rem';
+                        e.target.style.display = 'none';
 
-                            actionsDiv.innerHTML = `
-                                <a href="cart.php" class="btn btn-primary" style="flex: 1; text-align: center; background-color: #28a745; border: none; padding: 1rem; border-radius: 0.5rem; color: white; text-decoration: none; font-weight: bold;">
-                                    Go to Cart 🛒
-                                </a>
-                                <button id="continue-shopping" class="btn btn-secondary" style="flex: 1; padding: 1rem; border-radius: 0.5rem; font-weight: bold; cursor: pointer;">
-                                    Stay & Design
-                                </button>
-                            `;
+                        const actionsDiv = document.createElement('div');
+                        actionsDiv.id = 'post-cart-actions';
+                        actionsDiv.style.display = 'flex';
+                        actionsDiv.style.gap = '10px';
+                        actionsDiv.style.marginTop = '1rem';
 
-                            e.target.parentNode.insertBefore(actionsDiv, e.target.nextSibling);
+                        actionsDiv.innerHTML = `
+                            <a href="cart.php" class="btn btn-primary" style="flex: 1; text-align: center; background-color: #28a745; border: none; padding: 1rem; border-radius: 0.5rem; color: white; text-decoration: none; font-weight: bold;">
+                                Go to Cart 🛒
+                            </a>
+                            <button id="continue-shopping" class="btn btn-secondary" style="flex: 1; padding: 1rem; border-radius: 0.5rem; font-weight: bold; cursor: pointer;">
+                                Stay & Design
+                            </button>
+                        `;
 
-                            document.getElementById('continue-shopping').addEventListener('click', (ev) => {
-                                ev.preventDefault();
-                                actionsDiv.remove(); 
-                                e.target.style.display = 'block'; 
-                            });
-                        }
+                        e.target.parentNode.insertBefore(actionsDiv, e.target.nextSibling);
+
+                        document.getElementById('continue-shopping').addEventListener('click', (ev) => {
+                            ev.preventDefault();
+                            actionsDiv.remove(); 
+                            e.target.style.display = 'block'; 
+                        });
                     }
+                }
 
                     // ==========================================
                     // 2. SAVE DESIGN (SAFE MODE)
