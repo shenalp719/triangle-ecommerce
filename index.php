@@ -58,7 +58,7 @@ include 'includes/header.php';
         
         <div class="grid grid-4">
             <div class="product-card">
-                <div style="height: 250px; background: linear-gradient(135deg, #E31E24, #111111); display: flex; align-items: center; justify-content: center; color: white; font-size: 4rem;">🖼️</div>
+                <div style="height: 250px; background-image: url('https://images.unsplash.com/photo-1513519245088-0e12902e5a38?q=80&w=800&auto=format&fit=crop'); background-size: cover; background-position: center; border-radius: 8px 8px 0 0;"></div>
                 <div class="product-info">
                     <div class="product-category">Frames</div>
                     <h4 class="product-name">Frame Posters</h4>
@@ -69,35 +69,35 @@ include 'includes/header.php';
             </div>
             
             <div class="product-card">
-                <div style="height: 250px; background: linear-gradient(135deg, #F5F5F5, #777777); display: flex; align-items: center; justify-content: center; color: #E31E24; font-size: 4rem;">☕</div>
+                <div style="height: 250px; background-image: url('https://images.unsplash.com/photo-1514228742587-6b1558fcca3d?q=80&w=800&auto=format&fit=crop'); background-size: cover; background-position: center; border-radius: 8px 8px 0 0;"></div>
                 <div class="product-info">
                     <div class="product-category">Drinkware</div>
                     <h4 class="product-name">Custom Mugs</h4>
                     <p style="color: var(--text-light); font-size: 0.9rem;">Add photos, text, or designs to create personalized mugs.</p>
                     <div class="product-price">From $12</div>
-                    <a href="customizer-product.php?type=mug" class="btn btn-primary btn-sm btn-block">Customize Now</a>
+                    <a href="customizer-mug.php" class="btn btn-primary btn-sm btn-block">Customize Now</a>
                 </div>
             </div>
             
             <div class="product-card">
-                <div style="height: 250px; background: linear-gradient(135deg, #E31E24, #F5F5F5); display: flex; align-items: center; justify-content: center; color: white; font-size: 4rem;">👕</div>
+                <div style="height: 250px; background-image: url('https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?q=80&w=800&auto=format&fit=crop'); background-size: cover; background-position: center; border-radius: 8px 8px 0 0;"></div>
                 <div class="product-info">
                     <div class="product-category">Apparel</div>
                     <h4 class="product-name">T-Shirts</h4>
                     <p style="color: var(--text-light); font-size: 0.9rem;">Custom printed t-shirts with your designs and artwork.</p>
                     <div class="product-price">From $18</div>
-                    <a href="customizer-product.php?type=shirt" class="btn btn-primary btn-sm btn-block">Customize Now</a>
+                    <a href="customizer-shirt.php" class="btn btn-primary btn-sm btn-block">Customize Now</a>
                 </div>
             </div>
             
             <div class="product-card">
-                <div style="height: 250px; background: linear-gradient(135deg, #111111, #E31E24); display: flex; align-items: center; justify-content: center; color: white; font-size: 4rem;">🧢</div>
+                <div style="height: 250px; background-image: url('https://images.unsplash.com/photo-1588850561407-ed78c282e89b?q=80&w=800&auto=format&fit=crop'); background-size: cover; background-position: center; border-radius: 8px 8px 0 0;"></div>
                 <div class="product-info">
                     <div class="product-category">Headwear</div>
                     <h4 class="product-name">Custom Caps</h4>
                     <p style="color: var(--text-light); font-size: 0.9rem;">Embroidered or printed caps for your brand or event.</p>
                     <div class="product-price">From $15</div>
-                    <a href="customizer-product.php?type=cap" class="btn btn-primary btn-sm btn-block">Customize Now</a>
+                    <a href="customizer-cap.php" class="btn btn-primary btn-sm btn-block">Customize Now</a>
                 </div>
             </div>
         </div>

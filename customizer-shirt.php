@@ -749,18 +749,22 @@ include 'includes/header.php';
                 document.body.addEventListener('click', async (e) => {
                     
                     // ==========================================
-                    // 1. ADD TO CART LOGIC
+                    // 1. ADD TO CART LOGIC (FIXED)
                     // ==========================================
                     if (e.target && e.target.id === 'add-product-cart') {
                         e.preventDefault();
                         console.log("🛒 Add to Cart clicked!");
 
                         const productType = (typeof customizer !== 'undefined') ? customizer.productType : 'product';
-                        const basePrice = (typeof customizer !== 'undefined') ? customizer.basePrice : 15.00;
+                        const basePrice = (typeof customizer !== 'undefined') ? customizer.basePrice : 12.00;
                         const productName = 'Custom ' + productType.charAt(0).toUpperCase() + productType.slice(1);
 
+                        // FIX: Grab the default image URL for the mug
+                            const defaultImage = 'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?q=80&w=800&auto=format&fit=crop'; // (Shirt image)
+
                         if (window.app && window.app.addToCart) {
-                            window.app.addToCart(productType + '_' + Date.now(), productName, basePrice);
+                            // We added 'defaultImage' as the 4th item here!
+                            window.app.addToCart(productType + '_' + Date.now(), productName, basePrice, defaultImage);
                             window.app.showNotification('Design added to cart!', 'success');
 
                             e.target.style.display = 'none';
