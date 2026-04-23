@@ -17,13 +17,23 @@ $user_id = $_SESSION['user_id'];
 $userResult = executeQuery("SELECT * FROM users WHERE id = $user_id");
 $user = $userResult->fetch_assoc();
 
-// Get user's orders
-$ordersResult = executeQuery("SELECT * FROM orders WHERE user_id = $user_id ORDER BY created_at DESC");
-$orders = $ordersResult ? $ordersResult->fetch_all(MYSQLI_ASSOC) : [];
+// Get user's orders (Fixing the fetch_all error)
+$ordersResult = $conn->query("SELECT * FROM orders WHERE user_id = $user_id ORDER BY created_at DESC");
+$orders = [];
+if ($ordersResult) {
+    while($row = $ordersResult->fetch_assoc()) {
+        $orders[] = $row;
+    }
+}
 
-// Get user's saved designs
-$designsResult = executeQuery("SELECT * FROM designs WHERE user_id = $user_id ORDER BY created_at DESC");
-$designs = $designsResult ? $designsResult->fetch_all(MYSQLI_ASSOC) : [];
+// Get user's saved designs (Fixing the fetch_all error)
+$designsResult = $conn->query("SELECT * FROM designs WHERE user_id = $user_id ORDER BY created_at DESC");
+$designs = [];
+if ($designsResult) {
+    while($row = $designsResult->fetch_assoc()) {
+        $designs[] = $row;
+    }
+}
 
 // Fetch the user's order history
 $user_id = $_SESSION['user_id'];
@@ -155,7 +165,7 @@ include 'includes/header.php';
                                     <div style="font-size: 1.25rem; font-weight: 700; color: var(--primary-red);">
                                         $<?php echo number_format($order['total_amount'], 2); ?>
                                     </div>
-                                    <a href="#order-<?php echo $order['id']; ?>" style="font-size: 0.85rem;">View Details →</a>
+                                    <a href="order-details.php?id=<?php echo $order['id']; ?>" style="font-size: 0.85rem;">View Details →</a>
                                 </div>
                             </div>
                         </div>
