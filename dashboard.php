@@ -147,16 +147,17 @@ include 'includes/header.php';
                                     </small>
                                     <div style="margin-top: 0.5rem;">
                                         <span class="badge" style="background-color: <?php 
-                                            echo match($order['status']) {
-                                                'pending' => '#F39C12',
-                                                'processing' => '#3498DB',
-                                                'printing' => '#9B59B6',
-                                                'prepared' => '#1ABC9C',
-                                                'shipped' => '#16A085',
-                                                'delivered' => '#27AE60',
-                                                default => '#95A5A6'
-                                            };
-                                        ?>;">
+                                            $status = $order['status'];
+                                            switch($status) {
+                                                case 'pending': echo '#F39C12'; break;
+                                                case 'processing': echo '#3498DB'; break;
+                                                case 'printing': echo '#9B59B6'; break;
+                                                case 'prepared': echo '#1ABC9C'; break;
+                                                case 'shipped': echo '#16A085'; break;
+                                                case 'delivered': echo '#27AE60'; break;
+                                                default: echo '#95A5A6'; break;
+                                            }
+                                            ?>;">
                                             <?php echo ucfirst($order['status']); ?>
                                         </span>
                                     </div>
