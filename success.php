@@ -45,16 +45,22 @@ if (isset($_SESSION['pending_order']) && isset($_SESSION['user_id'])) {
             $order_id = $stmt->insert_id;
             $stmt->close();
 
-            // 3. Save Order Items
-            $item_stmt = $conn->prepare("INSERT INTO order_items (order_id, quantity, unit_price, print_file) VALUES (?, ?, ?, ?)");
+            // 3. Save Order Items - FIXED: Added product_name and image to the INSERT query
+            $item_stmt = $conn->prepare("INSERT INTO order_items (order_id, quantity, unit_price, print_file, product_name, image) VALUES (?, ?, ?, ?, ?, ?)");
             $items_successful = true;
 
             foreach ($order['items'] as $item) {
+                // Determine if item is an object or array and grab values safely
                 $qty = is_object($item) ? $item->quantity : $item['quantity'];
                 $price = is_object($item) ? $item->price : $item['price'];
                 $custom_data = is_string($item) ? $item : json_encode($item); 
+                
+                // FIXED: Extract the name and image safely!
+                $item_name = is_object($item) ? ($item->name ?? 'Custom Product') : ($item['name'] ?? 'Custom Product');
+                $item_image = is_object($item) ? ($item->image ?? '') : ($item['image'] ?? '');
 
-                $item_stmt->bind_param("iids", $order_id, $qty, $price, $custom_data);
+                // bind_param signature updated: "iids" -> "iidsss"
+                $item_stmt->bind_param("iidsss", $order_id, $qty, $price, $custom_data, $item_name, $item_image);
                 if (!$item_stmt->execute()) { $items_successful = false; }
             }
             $item_stmt->close();

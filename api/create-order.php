@@ -7,7 +7,6 @@ header('Content-Type: application/json');
 session_start();
 require_once '../db.php';
 
-// Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
     http_response_code(401);
     echo json_encode(['success' => false, 'message' => 'Not authenticated']);
@@ -15,8 +14,6 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 $user_id = $_SESSION['user_id'];
-
-// Get JSON data
 $data = json_decode(file_get_contents('php://input'), true);
 
 if (!isset($data['items']) || count($data['items']) === 0) {
@@ -30,10 +27,8 @@ $shipping = floatval($data['shipping'] ?? 15);
 $tax = floatval($data['tax'] ?? $subtotal * 0.08);
 $total = $subtotal + $shipping + $tax;
 
-// Generate order number
 $order_number = 'ORD-' . date('Ymd') . '-' . strtoupper(substr(bin2hex(random_bytes(3)), 0, 6));
 
-// Create order
 $sql = "INSERT INTO orders (user_id, order_number, status, total_amount) 
         VALUES ($user_id, '$order_number', 'pending', $total)";
 
@@ -46,8 +41,13 @@ if ($conn->query($sql)) {
         $quantity = intval($item['quantity'] ?? 1);
         $unit_price = floatval($item['price'] ?? 0);
         
-        $itemSQL = "INSERT INTO order_items (order_id, product_id, quantity, unit_price) 
-                   VALUES ($order_id, $product_id, $quantity, $unit_price)";
+        // FIXED: Grab the name and image, making sure they are safe for the database
+        $product_name = $conn->real_escape_string($item['name'] ?? 'Custom Product');
+        $image_url = $conn->real_escape_string($item['image'] ?? '');
+        
+        // FIXED: Insert the name and image into the database too!
+        $itemSQL = "INSERT INTO order_items (order_id, product_id, quantity, unit_price, product_name, image) 
+                   VALUES ($order_id, $product_id, $quantity, $unit_price, '$product_name', '$image_url')";
         
         $conn->query($itemSQL);
     }
