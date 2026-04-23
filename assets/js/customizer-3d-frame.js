@@ -205,3 +205,47 @@ function updatePrice() {
     const priceDisplay = document.getElementById('price-display');
     if(priceDisplay) priceDisplay.textContent = '$' + price.toFixed(2);
 }
+
+    // ========== 4. ADD TO CART & QUANTITY LOGIC ==========
+
+    // 1. Make the + and - quantity buttons work
+    document.querySelectorAll('.qty-adjust').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const input = document.getElementById('quantity');
+            let val = parseInt(input.value) + parseInt(e.target.dataset.value);
+            if (val < 1) val = 1; // Don't allow less than 1
+            input.value = val;
+        });
+    });
+
+    // 2. Make the Add to Cart button work
+    document.getElementById('add-to-cart').addEventListener('click', () => {
+        
+        // Grab the user's selections
+        const size = document.getElementById('poster-size').value;
+        const styleSelect = document.getElementById('frame-style');
+        const styleName = styleSelect.options[styleSelect.selectedIndex].text;
+        const quantity = parseInt(document.getElementById('quantity').value) || 1;
+
+        // Calculate the exact price from your price list
+        const price = sizePrices[size] || 25;
+        
+        // Create a detailed product name so the receipt looks professional
+        const productName = `Custom Frame (${size} - ${styleName})`;
+
+        // Use the high-quality Unsplash image we assigned to frames earlier
+        const frameImage = 'https://images.unsplash.com/photo-1513519245088-0e12902e5a38?q=80&w=800&auto=format&fit=crop';
+        
+        // Create a unique ID for this specific size and style so they stack correctly in the cart
+        const productId = 'frame_' + size + '_' + styleSelect.value;
+
+        // Send it to the global cart system!
+        if (typeof window.app !== 'undefined' && typeof window.app.addToCart === 'function') {
+            // Loop it so if they chose Quantity: 3, it adds 3 to the cart
+            for (let i = 0; i < quantity; i++) {
+                window.app.addToCart(productId, productName, price, frameImage);
+            }
+        } else {
+            console.error("Cart system is missing on this page!");
+        }
+    });
