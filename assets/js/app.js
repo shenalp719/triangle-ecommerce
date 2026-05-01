@@ -144,17 +144,44 @@ function addToCart(productId, productName, price, image = null) {
     // SAFETY NET: If the image is empty or missing, we give it a default mug image
     const finalImage = (image && image !== '') ? image : 'https://images.unsplash.com/photo-1514228742587-6b1558fcca3d?q=80&w=400';
 
+    // ==========================================
+    // TEACHER NOTE: THE INVENTORY FIX
+    // We intercept the frontend string and force a real database integer!
+    // ==========================================
+    let realDbId = parseInt(productId);
+    
+    // If the customizer sent a text string, parseInt becomes NaN (Not a Number)
+    if (isNaN(realDbId) || realDbId === 0) {
+        const lowerName = productName.toLowerCase();
+        
+        // NOTE TO SHENAL: Change these numbers to match the actual 'id' column in your WAMP products table!
+        if (lowerName.includes('mug')) {
+            realDbId = 3; // Base 11oz Coffee Mug
+        } else if (lowerName.includes('shirt') || lowerName.includes('t-shirt')) {
+            realDbId = 5; // Base Unisex T-Shirt
+        } else if (lowerName.includes('cap')) {
+            realDbId = 7; // Base Baseball Cap
+        } else if (lowerName.includes('frame')) {
+            realDbId = 1; // Base 8x10 Poster Frame
+        } else {
+            realDbId = 3; // Fallback
+        }
+    }
+    // ==========================================
+
     const cartItem = {
-        id: productId + '_' + Date.now(),
-        productId: productId,
+        id: productId + '_' + Date.now(), 
+        productId: realDbId,              // PHP will now receive the true integer for stock deduction!
+        uniqueDesignId: productId,        // We keep the original string here to prevent custom designs from merging
         name: productName,
         price: parseFloat(price),
         quantity: 1,
-        image: finalImage, // Use our saved image
+        image: finalImage, 
         addedAt: new Date().toISOString()
     };
     
-    const existingItem = appState.cart.find(item => item.productId === productId);
+    // Check using our new uniqueDesignId so different custom mugs don't stack into one quantity
+    const existingItem = appState.cart.find(item => item.uniqueDesignId === productId);
     
     if (existingItem) {
         existingItem.quantity += 1;
@@ -168,7 +195,7 @@ function addToCart(productId, productName, price, image = null) {
     
     // Track event
     trackEvent('add_to_cart', {
-        productId: productId,
+        productId: realDbId,
         productName: productName,
         price: price
     });

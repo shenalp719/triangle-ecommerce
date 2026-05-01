@@ -47,6 +47,10 @@ if (isset($_SESSION['pending_order']) && isset($_SESSION['user_id'])) {
 
             // 3. Save Order Items - FIXED: Added product_name and image to the INSERT query
             $item_stmt = $conn->prepare("INSERT INTO order_items (order_id, quantity, unit_price, print_file, product_name, image) VALUES (?, ?, ?, ?, ?, ?)");
+            
+            // Prepare the stock deduction query outside the loop for efficiency!
+            $stock_stmt = $conn->prepare("UPDATE products SET stock_quantity = stock_quantity - ?, available = IF(stock_quantity - ? <= 0, 0, 1) WHERE id = ?");
+            
             $items_successful = true;
 
             foreach ($order['items'] as $item) {
@@ -55,15 +59,43 @@ if (isset($_SESSION['pending_order']) && isset($_SESSION['user_id'])) {
                 $price = is_object($item) ? $item->price : $item['price'];
                 $custom_data = is_string($item) ? $item : json_encode($item); 
                 
-                // FIXED: Extract the name and image safely!
+                // Extract the name and image safely!
                 $item_name = is_object($item) ? ($item->name ?? 'Custom Product') : ($item['name'] ?? 'Custom Product');
                 $item_image = is_object($item) ? ($item->image ?? '') : ($item['image'] ?? '');
 
                 // bind_param signature updated: "iids" -> "iidsss"
                 $item_stmt->bind_param("iidsss", $order_id, $qty, $price, $custom_data, $item_name, $item_image);
-                if (!$item_stmt->execute()) { $items_successful = false; }
+                
+                if ($item_stmt->execute()) {
+                    // ==========================================
+                    //THE INVENTORY DEDUCTION
+                    // ==========================================
+                    $lower_name = strtolower($item_name);
+                    $base_product_id = 3; // Default fallback
+                    
+                    // Match the custom name to your WAMP Database IDs!
+                    if (strpos($lower_name, 'mug') !== false) {
+                        $base_product_id = 3; // Base 11oz Coffee Mug
+                    } elseif (strpos($lower_name, 'shirt') !== false || strpos($lower_name, 't-shirt') !== false) {
+                        $base_product_id = 5; // Base Unisex T-Shirt
+                    } elseif (strpos($lower_name, 'cap') !== false) {
+                        $base_product_id = 7; // Base Baseball Cap
+                    } elseif (strpos($lower_name, 'frame') !== false) {
+                        $base_product_id = 1; // Base 8x10 Poster Frame
+                    }
+                    
+                    // Deduct the stock!
+                    $stock_stmt->bind_param("iii", $qty, $qty, $base_product_id);
+                    if (!$stock_stmt->execute()) {
+                        error_log("Failed to deduct stock for product ID: " . $base_product_id);
+                    }
+                    // ==========================================
+                } else {
+                    $items_successful = false; 
+                }
             }
             $item_stmt->close();
+            $stock_stmt->close();
             
             if ($items_successful) {
                 $order_saved = true;

@@ -29,28 +29,48 @@ $total = $subtotal + $shipping + $tax;
 
 $order_number = 'ORD-' . date('Ymd') . '-' . strtoupper(substr(bin2hex(random_bytes(3)), 0, 6));
 
-$sql = "INSERT INTO orders (user_id, order_number, status, total_amount) 
-        VALUES ($user_id, '$order_number', 'pending', $total)";
+// Start a database transaction (Good practice for e-commerce!)
+$conn->begin_transaction();
 
-if ($conn->query($sql)) {
+try {
+    $sql = "INSERT INTO orders (user_id, order_number, status, total_amount) 
+            VALUES ($user_id, '$order_number', 'pending', $total)";
+    
+    if (!$conn->query($sql)) {
+        throw new Exception("Failed to insert order: " . $conn->error);
+    }
+    
     $order_id = $conn->insert_id;
     
-    // Add order items
+    // Add order items AND deduct stock
     foreach ($data['items'] as $item) {
         $product_id = intval($item['productId'] ?? 1);
         $quantity = intval($item['quantity'] ?? 1);
         $unit_price = floatval($item['price'] ?? 0);
         
-        // FIXED: Grab the name and image, making sure they are safe for the database
         $product_name = $conn->real_escape_string($item['name'] ?? 'Custom Product');
         $image_url = $conn->real_escape_string($item['image'] ?? '');
         
-        // FIXED: Insert the name and image into the database too!
         $itemSQL = "INSERT INTO order_items (order_id, product_id, quantity, unit_price, product_name, image) 
                    VALUES ($order_id, $product_id, $quantity, $unit_price, '$product_name', '$image_url')";
         
-        $conn->query($itemSQL);
+        if (!$conn->query($itemSQL)) {
+            throw new Exception("Failed to insert order item: " . $conn->error);
+        }
+
+    
+        $stockUpdateSQL = "UPDATE products 
+                           SET stock_quantity = stock_quantity - $quantity,
+                               available = IF(stock_quantity - $quantity <= 0, 0, 1)
+                           WHERE id = $product_id";
+                           
+        if (!$conn->query($stockUpdateSQL)) {
+             throw new Exception("Failed to update inventory: " . $conn->error);
+        }
     }
+    
+    // If everything worked perfectly, commit the changes to the database!
+    $conn->commit();
     
     echo json_encode([
         'success' => true,
@@ -58,11 +78,14 @@ if ($conn->query($sql)) {
         'orderId' => $order_id,
         'orderNumber' => $order_number
     ]);
-} else {
+
+} catch (Exception $e) {
+    // If ANY query failed,rollback (undo) everything to prevent missing stock/data
+    $conn->rollback();
     http_response_code(500);
     echo json_encode([
         'success' => false,
-        'message' => 'Error creating order: ' . $conn->error
+        'message' => $e->getMessage()
     ]);
 }
 ?>

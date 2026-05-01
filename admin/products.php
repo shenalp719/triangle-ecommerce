@@ -30,23 +30,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_product'])) {
     $name = trim($_POST['name']);
     $category = trim($_POST['category']);
     $base_price = floatval($_POST['base_price']);
-    $available = isset($_POST['available']) ? 1 : 0;
+    $stock_quantity = isset($_POST['stock_quantity']) ? intval($_POST['stock_quantity']) : 0; 
+    
+    // Automatically hide the product if stock hits 0!
+    $available = ($stock_quantity > 0 && isset($_POST['available'])) ? 1 : 0; 
+    
     $description = trim($_POST['description']);
-    // Setting default empty JSON for specifications to prevent database errors
     $specifications = '{}'; 
 
     if (!empty($_POST['product_id'])) {
         // UPDATE Existing Product
         $id = intval($_POST['product_id']);
-        $stmt = $conn->prepare("UPDATE products SET name=?, category=?, base_price=?, available=?, description=? WHERE id=?");
-        $stmt->bind_param("ssdisi", $name, $category, $base_price, $available, $description, $id);
+        $stmt = $conn->prepare("UPDATE products SET name=?, category=?, base_price=?, available=?, stock_quantity=?, description=? WHERE id=?");
+        
+        // TEACHER FIX: 7 variables mapped exactly -> s, s, d, i, i, s, i
+        $stmt->bind_param("ssdiisi", $name, $category, $base_price, $available, $stock_quantity, $description, $id);
+        
         if($stmt->execute()) {
             $message = "<div style='background: #d4edda; color: #155724; padding: 1rem; border-radius: 5px; margin-bottom: 1rem;'>Product updated successfully!</div>";
         }
     } else {
         // CREATE New Product
-        $stmt = $conn->prepare("INSERT INTO products (name, category, base_price, available, description, specifications) VALUES (?, ?, ?, ?, ?, ?)");
-        $stmt->bind_param("ssdiss", $name, $category, $base_price, $available, $description, $specifications);
+        $stmt = $conn->prepare("INSERT INTO products (name, category, base_price, available, stock_quantity, description, specifications) VALUES (?, ?, ?, ?, ?, ?, ?)");
+        
+        // TEACHER FIX: 7 variables mapped exactly -> s, s, d, i, i, s, s
+        $stmt->bind_param("ssdiiss", $name, $category, $base_price, $available, $stock_quantity, $description, $specifications);
+        
         if($stmt->execute()) {
             $message = "<div style='background: #d4edda; color: #155724; padding: 1rem; border-radius: 5px; margin-bottom: 1rem;'>New product added to inventory!</div>";
         }
@@ -136,6 +145,13 @@ $products = $conn->query("SELECT * FROM products ORDER BY id DESC");
                         <label>Base Price ($)</label>
                         <input type="number" step="0.01" name="base_price" required value="<?php echo $edit_product ? $edit_product['base_price'] : ''; ?>">
                     </div>
+                    
+                    <!-- TEACHER NOTE: New Stock Quantity Input -->
+                    <div style="flex: 1;">
+                        <label>Stock Quantity</label>
+                        <input type="number" name="stock_quantity" required min="0" value="<?php echo $edit_product ? $edit_product['stock_quantity'] : '100'; ?>">
+                    </div>
+
                     <div style="flex: 1;">
                         <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
                             <input type="checkbox" name="available" value="1" style="width: auto; margin: 0;" <?php echo ($edit_product && $edit_product['available'] == 1) ? 'checked' : ''; ?>>
@@ -164,6 +180,7 @@ $products = $conn->query("SELECT * FROM products ORDER BY id DESC");
                     <th>Name</th>
                     <th>Category</th>
                     <th>Price</th>
+                    <th>Stock</th>
                     <th>Status</th>
                     <th>Actions</th>
                 </tr>
@@ -173,6 +190,16 @@ $products = $conn->query("SELECT * FROM products ORDER BY id DESC");
                         <td><strong><?php echo htmlspecialchars($row['name']); ?></strong></td>
                         <td><?php echo htmlspecialchars($row['category']); ?></td>
                         <td>$<?php echo number_format($row['base_price'], 2); ?></td>
+                        
+                        
+                        <td>
+                            <?php if ($row['stock_quantity'] <= 10): ?>
+                                <span style="color: #e74c3c; font-weight: bold;"><?php echo $row['stock_quantity']; ?> (Low!)</span>
+                            <?php else: ?>
+                                <span><?php echo $row['stock_quantity']; ?></span>
+                            <?php endif; ?>
+                        </td>
+
                         <td>
                             <?php if($row['available'] == 1): ?>
                                 <span style="background: #d4edda; color: #155724; padding: 3px 8px; border-radius: 10px; font-size: 0.8rem;">Active</span>
