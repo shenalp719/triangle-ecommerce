@@ -5,6 +5,9 @@
 session_start();
 require_once 'db.php';
 
+// Fetch only NEW products (ID > 8)
+$dynamic_products = $conn->query("SELECT * FROM products WHERE available = 1 AND stock_quantity > 0 AND id > 8 ORDER BY id DESC");
+
 $page_title = 'Products';
 include 'includes/header.php';
 ?>
@@ -96,7 +99,6 @@ include 'includes/header.php';
                 <div class="product-info">
                     <div class="product-category">Headwear</div>
                     <h4 class="product-name">Baseball Cap</h4>
-                    <h4 class="product-name">Baseball Cap</h4>
                     <p style="color: var(--text-light); font-size: 0.9rem;">Classic baseball cap with full customization options.</p>
                     <div class="product-price">$15.00</div>
                     <button class="btn btn-primary btn-sm btn-block" onclick="app.addToCart(7, 'Baseball Cap', 15, 'https://images.unsplash.com/photo-1588850561407-ed78c282e89b?q=80&w=800&auto=format&fit=crop'); window.location.href='customizer-cap.php?type=cap'">Customize</button>
@@ -113,8 +115,36 @@ include 'includes/header.php';
                     <button class="btn btn-primary btn-sm btn-block" onclick="app.addToCart(8, 'Snapback Cap', 18, 'https://images.unsplash.com/photo-1588850561407-ed78c282e89b?q=80&w=800&auto=format&fit=crop'); window.location.href='customizer-cap.php?type=cap'">Customize</button>
                 </div>
             </div>
+
+            <!-- DYNAMIC PRODUCTS FROM DATABASE -->
+            <?php 
+            // Loop through dynamically fetched products from database
+            while($row = $dynamic_products->fetch_assoc()): 
+            ?>
+                <div class="product-card" data-category="<?php echo strtolower(htmlspecialchars($row['category'])); ?>">
+                    
+                    <?php 
+                        // Use uploaded image path or fall back to a generic standard placeholder
+                        $display_image = !empty($row['image']) ? $row['image'] : 'https://images.unsplash.com/photo-1514228742587-6b1558fcca3d?q=80&w=800'; 
+                    ?>
+                    
+                    <div style="height: 250px; background-image: url('<?php echo $display_image; ?>'); background-size: cover; background-position: center; border-radius: 8px 8px 0 0;"></div>
+                    <div class="product-info">
+                        <div class="product-category"><?php echo htmlspecialchars($row['category']); ?></div>
+                        <h4 class="product-name"><?php echo htmlspecialchars($row['name']); ?></h4>
+                        <p style="color: var(--text-light); font-size: 0.9rem;">
+                            <?php echo htmlspecialchars(substr($row['description'], 0, 60)) . '...'; ?>
+                        </p>
+                        <div class="product-price">$<?php echo number_format($row['base_price'], 2); ?></div>
+                        
+                        <button class="btn btn-primary btn-sm btn-block" onclick="app.addToCart(<?php echo $row['id']; ?>, '<?php echo addslashes($row['name']); ?>', <?php echo $row['base_price']; ?>, '<?php echo $display_image; ?>');">Add to Cart</button>
+                    </div>
+                </div>
+            <?php endwhile; ?>
+            
         </div>
     </section>
+       
 
     <script>
         // Product filtering logic

@@ -31,30 +31,54 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_product'])) {
     $category = trim($_POST['category']);
     $base_price = floatval($_POST['base_price']);
     $stock_quantity = isset($_POST['stock_quantity']) ? intval($_POST['stock_quantity']) : 0; 
-    
-    // Automatically hide the product if stock hits 0!
     $available = ($stock_quantity > 0 && isset($_POST['available'])) ? 1 : 0; 
-    
     $description = trim($_POST['description']);
     $specifications = '{}'; 
+    
+    $image_path = null;
+    
+    // Process image if an actual file was uploaded without errors
+    if (isset($_FILES['product_image']) && $_FILES['product_image']['error'] === UPLOAD_ERR_OK) {
+        $ext = pathinfo($_FILES['product_image']['name'], PATHINFO_EXTENSION);
+        $filename = uniqid('prod_') . '.' . $ext; 
+        
+        // Define the absolute path
+        $upload_dir = __DIR__ . '/../assets/images/products/';
+        
+        // Automatically create the folders if they do not exist
+        if (!is_dir($upload_dir)) {
+            mkdir($upload_dir, 0777, true);
+        }
+        
+        $destination = $upload_dir . $filename;
+        $db_path = 'assets/images/products/' . $filename; 
+
+        if (move_uploaded_file($_FILES['product_image']['tmp_name'], $destination)) {
+            $image_path = $db_path;
+        } else {
+            $message = "<div style='background: #f8d7da; color: #721c24; padding: 1rem; border-radius: 5px; margin-bottom: 1rem;'>Error: Could not move file. Check folder permissions.</div>";
+        }
+    }
 
     if (!empty($_POST['product_id'])) {
         // UPDATE Existing Product
         $id = intval($_POST['product_id']);
-        $stmt = $conn->prepare("UPDATE products SET name=?, category=?, base_price=?, available=?, stock_quantity=?, description=? WHERE id=?");
         
-        // TEACHER FIX: 7 variables mapped exactly -> s, s, d, i, i, s, i
-        $stmt->bind_param("ssdiisi", $name, $category, $base_price, $available, $stock_quantity, $description, $id);
+        if ($image_path) {
+            $stmt = $conn->prepare("UPDATE products SET name=?, category=?, base_price=?, available=?, stock_quantity=?, description=?, image=? WHERE id=?");
+            $stmt->bind_param("ssdiissi", $name, $category, $base_price, $available, $stock_quantity, $description, $image_path, $id);
+        } else {
+            $stmt = $conn->prepare("UPDATE products SET name=?, category=?, base_price=?, available=?, stock_quantity=?, description=? WHERE id=?");
+            $stmt->bind_param("ssdiisi", $name, $category, $base_price, $available, $stock_quantity, $description, $id);
+        }
         
         if($stmt->execute()) {
             $message = "<div style='background: #d4edda; color: #155724; padding: 1rem; border-radius: 5px; margin-bottom: 1rem;'>Product updated successfully!</div>";
         }
     } else {
         // CREATE New Product
-        $stmt = $conn->prepare("INSERT INTO products (name, category, base_price, available, stock_quantity, description, specifications) VALUES (?, ?, ?, ?, ?, ?, ?)");
-        
-        // TEACHER FIX: 7 variables mapped exactly -> s, s, d, i, i, s, s
-        $stmt->bind_param("ssdiiss", $name, $category, $base_price, $available, $stock_quantity, $description, $specifications);
+        $stmt = $conn->prepare("INSERT INTO products (name, category, base_price, available, stock_quantity, description, specifications, image) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt->bind_param("ssdiisss", $name, $category, $base_price, $available, $stock_quantity, $description, $specifications, $image_path);
         
         if($stmt->execute()) {
             $message = "<div style='background: #d4edda; color: #155724; padding: 1rem; border-radius: 5px; margin-bottom: 1rem;'>New product added to inventory!</div>";
@@ -126,7 +150,7 @@ $products = $conn->query("SELECT * FROM products ORDER BY id DESC");
 
         <div class="card">
             <h3 style="margin-top: 0;"><?php echo $edit_product ? 'Edit Product' : 'Add New Product'; ?></h3>
-            <form method="POST" action="products.php">
+            <form method="POST" action="products.php" enctype="multipart/form-data">
                 <input type="hidden" name="product_id" value="<?php echo $edit_product ? $edit_product['id'] : ''; ?>">
                 
                 <div style="display: flex; gap: 1rem;">
@@ -160,8 +184,21 @@ $products = $conn->query("SELECT * FROM products ORDER BY id DESC");
                     </div>
                 </div>
 
-                <label>Description</label>
-                <textarea name="description" rows="3"><?php echo $edit_product ? htmlspecialchars($edit_product['description']) : ''; ?></textarea>
+                <div style="display: flex; gap: 1rem;">
+                    <div style="flex: 2;">
+                        <label>Description</label>
+                        <textarea name="description" rows="3"><?php echo $edit_product ? htmlspecialchars($edit_product['description']) : ''; ?></textarea>
+                    </div>
+                    
+                    <!-- The new Image Upload box -->
+                    <div style="flex: 1;">
+                        <label>Product Image</label>
+                        <input type="file" name="product_image" accept="image/*" style="padding: 0.4rem;">
+                        <?php if($edit_product && !empty($edit_product['image'])): ?>
+                            <small style="color: green;">Current: <?php echo basename($edit_product['image']); ?></small>
+                        <?php endif; ?>
+                    </div>
+                </div>
 
                 <button type="submit" name="save_product" class="btn btn-primary">
                     <?php echo $edit_product ? 'Update Inventory' : 'Add to Inventory'; ?>
