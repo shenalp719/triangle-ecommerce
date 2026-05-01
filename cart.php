@@ -18,41 +18,28 @@ include 'includes/header.php';
                     </div>
             </div>
 
-            <div style="height: fit-content; position: sticky; top: 6rem;">
-                <div class="cart-summary">
-                    <h3 style="margin-bottom: 1.5rem;">Order Summary</h3>
+                <div class="summary-card" style="background: #2a2a2a; padding: 2rem; border-radius: 8px;">
+                    <h2 style="margin-top: 0; margin-bottom: 1.5rem;">Order Summary</h2>
                     
-                    <div class="summary-row">
-                        <span class="summary-label">Subtotal:</span>
-                        <span class="summary-value" id="subtotal">$0.00</span>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 1rem;">
+                        <span>Subtotal:</span>
+                        <strong id="summary-subtotal">LKR 0.00</strong>
                     </div>
                     
-                    <div class="summary-row">
-                        <span class="summary-label">Shipping:</span>
-                        <span class="summary-value" id="shipping">$0.00</span>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 1rem;">
+                        <span>Tax (8%):</span>
+                        <strong id="summary-tax">LKR 0.00</strong>
                     </div>
                     
-                    <div class="summary-row">
-                        <span class="summary-label">Tax (8%):</span>
-                        <span class="summary-value" id="tax">$0.00</span>
+                    <hr style="border: 0; border-top: 1px solid #444; margin: 1.5rem 0;">
+                    
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 2rem; color: #E31E24; font-size: 1.25rem;">
+                        <strong>Total:</strong>
+                        <strong id="summary-total">LKR 0.00</strong>
                     </div>
                     
-                    <div class="summary-row total">
-                        <span>Total:</span>
-                        <span id="total">$0.00</span>
-                    </div>
-                    
-                    <button class="btn btn-primary btn-block" style="margin-top: 1.5rem; padding: 1rem;" onclick="startStripeCheckout()">
-                        Proceed to Checkout
-                    </button>
-                    
-                    <a href="products.php" class="btn btn-secondary btn-block" style="margin-top: 0.75rem; padding: 1rem;">
-                        Continue Shopping
-                    </a>
-                    
-                    <p style="font-size: 0.85rem; color: var(--text-light); margin-top: 1rem; text-align: center;">
-                        Free shipping on orders over $150
-                    </p>
+                    <button onclick="app.proceedToCheckout()" class="btn btn-primary" style="width: 100%; margin-bottom: 1rem; padding: 1rem; font-weight: bold;">Proceed to Checkout</button>
+                    <a href="products.php" class="btn" style="display: block; text-align: center; width: 100%; background: transparent; border: 1px solid #555; color: white; padding: 1rem; box-sizing: border-box;">Continue Shopping</a>
                 </div>
 
                 <div class="card" style="margin-top: 1rem;">

@@ -12,7 +12,8 @@ let designData = {
     resolution: 300
 };
 
-const sizePrices = { '8x10': 25, '11x14': 35, '16x20': 45, '18x24': 55, '24x36': 75 };
+// TEACHER FIX: Updated to your new Sri Lankan Rupee pricing!
+const sizePrices = { '8x10': 2000, '11x14': 2800, '16x20': 3800, '18x24': 4700, '24x36': 6500 };
 
 // Three.js Variables
 let scene, camera, renderer, frameModel, canvasTexture;
@@ -201,9 +202,14 @@ function setupFrameEventListeners() {
 }
 
 function updatePrice() {
-    const price = sizePrices[designData.posterSize] || 25;
+    const basePrice = sizePrices[designData.posterSize] || 2000;
+    
+    // Grab the current quantity (default to 1 if empty)
+    const qtyInput = document.getElementById('quantity');
+    const qty = qtyInput ? (parseInt(qtyInput.value) || 1) : 1;
+    
     const priceDisplay = document.getElementById('price-display');
-    if(priceDisplay) priceDisplay.textContent = '$' + price.toFixed(2);
+    if(priceDisplay) priceDisplay.textContent = 'LKR ' + (basePrice * qty).toFixed(2);
 }
 
     // ========== 4. ADD TO CART & QUANTITY LOGIC ==========
@@ -212,11 +218,16 @@ function updatePrice() {
     document.querySelectorAll('.qty-adjust').forEach(btn => {
         btn.addEventListener('click', (e) => {
             const input = document.getElementById('quantity');
-            let val = parseInt(input.value) + parseInt(e.target.dataset.value);
+            let val = parseInt(input.value) + parseInt(btn.dataset.value);
             if (val < 1) val = 1; // Don't allow less than 1
             input.value = val;
+            
+            updatePrice(); // <--- THIS UPDATES THE TOTAL!
         });
     });
+
+    // Also update if the user manually types a number in the box
+    document.getElementById('quantity').addEventListener('input', updatePrice);
 
     // 2. Make the Add to Cart button work
     document.getElementById('add-to-cart').addEventListener('click', () => {
@@ -227,8 +238,8 @@ function updatePrice() {
         const styleName = styleSelect.options[styleSelect.selectedIndex].text;
         const quantity = parseInt(document.getElementById('quantity').value) || 1;
 
-        // Calculate the exact price from your price list
-        const price = sizePrices[size] || 25;
+        // Calculate the exact price from your price list (default 2000)
+        const price = sizePrices[size] || 2000;
         
         // Create a detailed product name so the receipt looks professional
         const productName = `Custom Frame (${size} - ${styleName})`;

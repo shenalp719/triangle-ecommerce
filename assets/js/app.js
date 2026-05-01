@@ -323,12 +323,10 @@ function validateForm(form) {
     return isValid;
 }
 
+
 // ========== UTILITY FUNCTIONS ==========
 function formatPrice(price) {
-    return new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: 'USD'
-    }).format(price);
+    return 'LKR ' + parseFloat(price).toFixed(2);
 }
 
 function getDateString(date) {

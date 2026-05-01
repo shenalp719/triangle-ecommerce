@@ -42,7 +42,7 @@ try {
         'payment_method_types' => ['card'],
         'line_items' => [[
             'price_data' => [
-                'currency' => 'usd',
+                'currency' => 'lkr',
                 'unit_amount' => $amountInCents,
                 'product_data' => [
                     'name' => 'Triangle Printing Solutions - Custom Order',

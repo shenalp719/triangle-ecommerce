@@ -59,34 +59,17 @@ function renderCart() {
 // ========== UPDATE CART SUMMARY ==========
 function updateCartSummary() {
     const subtotal = appState.cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    const shipping = subtotal > 0 ? 15 : 0;
-    const tax = subtotal * 0.08; // 8% tax
-    const total = subtotal + shipping + tax;
+    const tax = subtotal * 0.08; 
+    const total = subtotal + tax;
     
-    const summaryElements = {
-        subtotal: document.getElementById('subtotal'),
-        shipping: document.getElementById('shipping'),
-        tax: document.getElementById('tax'),
-        total: document.getElementById('total'),
-        itemCount: document.getElementById('item-count')
-    };
+    const subtotalEl = document.getElementById('summary-subtotal');
+    const taxEl = document.getElementById('summary-tax');
+    const totalEl = document.getElementById('summary-total');
     
-    if (summaryElements.subtotal) {
-        summaryElements.subtotal.textContent = app.formatPrice(subtotal);
-    }
-    if (summaryElements.shipping) {
-        summaryElements.shipping.textContent = app.formatPrice(shipping);
-    }
-    if (summaryElements.tax) {
-        summaryElements.tax.textContent = app.formatPrice(tax);
-    }
-    if (summaryElements.total) {
-        summaryElements.total.textContent = app.formatPrice(total);
-    }
-    if (summaryElements.itemCount) {
-        const count = appState.cart.reduce((sum, item) => sum + item.quantity, 0);
-        summaryElements.itemCount.textContent = count;
-    }
+    // Safely update the DOM elements using our formatter
+    if (subtotalEl) subtotalEl.textContent = app.formatPrice(subtotal);
+    if (taxEl) taxEl.textContent = app.formatPrice(tax);
+    if (totalEl) totalEl.textContent = app.formatPrice(total);
 }
 
 // ========== EVENT LISTENERS ==========
@@ -342,11 +325,10 @@ async function proceedToCheckout() {
         return;
     }
     
-    // Calculate the exact total (with tax & shipping) so Stripe charges the correct amount!
+    
     const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    const shipping = subtotal > 0 ? 15 : 0;
     const tax = subtotal * 0.08;
-    const finalTotal = subtotal + shipping + tax;
+    const finalTotal = subtotal + tax; 
     
     // Prepare order data EXACTLY as checkout.php expects it
     const orderData = {
@@ -357,7 +339,7 @@ async function proceedToCheckout() {
     
     try {
         // Change button text so the user knows it's loading
-        const checkoutBtn = document.querySelector('.checkout-btn') || document.querySelector('.cart-summary button');
+        const checkoutBtn = document.querySelector('.checkout-btn') || document.querySelector('.summary-card button');
         if (checkoutBtn) checkoutBtn.innerText = 'Connecting to Secure Checkout...';
 
         // Send directly to the PHP file
@@ -373,7 +355,7 @@ async function proceedToCheckout() {
         const result = await response.json();
         
         if (result.url) {
-            // Success! Send the customer to the Stripe payment page
+            // Send the customer to the Stripe payment page
             window.location.href = result.url;
         } else {
             console.error("Stripe Error:", result);
@@ -383,8 +365,13 @@ async function proceedToCheckout() {
     } catch (error) {
         console.error('Fetch Error:', error);
         alert('Failed to connect to the checkout server. Check your network.');
+        if (checkoutBtn) checkoutBtn.innerText = 'Proceed to Checkout';
     }
 }
+
+
+window.app = window.app || {};
+window.app.proceedToCheckout = proceedToCheckout;
 
 // Make functions globally available
 window.proceedToCheckout = proceedToCheckout;

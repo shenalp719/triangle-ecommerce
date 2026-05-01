@@ -12,7 +12,7 @@ $page_title = 'Mug Customizer';
 
 $product = [
     'name' => 'Custom Mug',
-    'price' => 12,
+    'price' => 450,
     'colors' => ['#FFFFFF', '#000000', '#E31E24', '#0066CC', '#00AA00'],
     'colorNames' => ['White', 'Black', 'Red', 'Blue', 'Green'],
     'sizes' => ['11oz', '15oz'],
@@ -142,7 +142,7 @@ include 'includes/header.php';
                 <small style="color: var(--text-light);">Product</small>
                 <div style="font-weight: 600; margin-bottom: 0.5rem;"><?php echo $product['name']; ?></div>
                 <small style="color: var(--text-light);">Base Price</small>
-                <div style="font-size: 1.5rem; font-weight: 700; color: var(--primary-red);" id="base-price">$<?php echo number_format($product['price'], 2); ?></div>
+                <div style="font-size: 1.5rem; font-weight: 700; color: var(--primary-red);" id="base-price">LKR <?php echo number_format($product['price'], 2); ?></div>
             </div>
 
             <div style="margin-bottom: 1.5rem;">
@@ -165,7 +165,7 @@ include 'includes/header.php';
 
             <div style="background-color: var(--light-gray); padding: 1rem; border-radius: 0.5rem; margin-bottom: 1.5rem; text-align: center;">
                 <small style="color: var(--text-light);">Total Price</small>
-                <div style="font-size: 2rem; font-weight: 700; color: var(--primary-red);" id="product-total">$<?php echo number_format($product['price'], 2); ?></div>
+                <div style="font-size: 2rem; font-weight: 700; color: var(--primary-red);" id="product-total">LKR <?php echo number_format($product['price'], 2); ?></div>
             </div>
 
             <button style="width: 100%; padding: 1rem; background-color: var(--primary-red); color: white; border: none; border-radius: 0.5rem; font-weight: 600; cursor: pointer; margin-bottom: 0.75rem; transition: background-color 0.3s;" id="add-product-cart">
@@ -605,14 +605,31 @@ include 'includes/header.php';
             }, { passive: false });
         }
 
-        function setupCartButtons() {
+function setupCartButtons() {
+            const qtyInput = document.getElementById('product-quantity');
+            const priceTotal = document.getElementById('product-total');
+
+            // Helper to calculate and display the new total
+            function updateProductTotal() {
+                let val = parseInt(qtyInput.value) || 1;
+                if (val < 1) { val = 1; qtyInput.value = 1; }
+                priceTotal.textContent = 'LKR ' + (customizer.basePrice * val).toFixed(2);
+            }
+
+            // Button clicks (+ / -)
             document.querySelectorAll('.qty-adjust-prod').forEach(btn => {
                 btn.addEventListener('click', () => {
-                    const input = document.getElementById('product-quantity');
-                    input.value = Math.max(1, parseInt(input.value) + parseInt(btn.dataset.value));
-                    document.getElementById('product-total').textContent = '$' + (customizer.basePrice * input.value).toFixed(2);
+                    qtyInput.value = Math.max(1, parseInt(qtyInput.value) + parseInt(btn.dataset.value));
+                    updateProductTotal(); // <--- THIS UPDATES THE TOTAL!
                 });
             });
+
+            // Manual typing in the input box
+            if (qtyInput) {
+                qtyInput.addEventListener('input', updateProductTotal);
+            }
+
+            // Existing Reset Logic
             document.getElementById('reset-product').addEventListener('click', () => {
                 if (confirm('Clear all layers and designs?')) {
                     customizer.textLayers = [];

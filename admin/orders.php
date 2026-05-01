@@ -1,4 +1,9 @@
 <?php
+// PHPMailer Headers - MUST be at the very top
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
+require_once '../vendor/autoload.php';
+
 session_start();
 if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) {
     header("Location: login.php");
@@ -12,10 +17,71 @@ $message = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_status'])) {
     $order_id = intval($_POST['order_id']);
     $new_status = $_POST['status']; 
+    
     $update_stmt = $conn->prepare("UPDATE orders SET status = ? WHERE id = ?");
     $update_stmt->bind_param("si", $new_status, $order_id);
+    
     if($update_stmt->execute()) {
         $message = "<div style='background: #d4edda; color: #155724; padding: 1rem; border-radius: 5px; margin-bottom: 1rem;'>Order #$order_id status updated to " . ucfirst($new_status) . "!</div>";
+        
+        // THE AUTOMATED PICKUP EMAIL
+        
+        if ($new_status === 'ready') {
+            // 1. Fetch the user's email and name by joining the orders and users tables
+            $user_stmt = $conn->prepare("
+                SELECT u.email, u.first_name, o.order_number 
+                FROM orders o 
+                JOIN users u ON o.user_id = u.id 
+                WHERE o.id = ?
+            ");
+            $user_stmt->bind_param("i", $order_id);
+            $user_stmt->execute();
+            $user_data = $user_stmt->get_result()->fetch_assoc();
+            $user_stmt->close();
+
+            if ($user_data && !empty($user_data['email'])) {
+                $customer_email = $user_data['email'];
+                $customer_name = $user_data['first_name'] ?? 'Valued Customer';
+                $order_number = $user_data['order_number'];
+
+                // 2. Fire up PHPMailer using your exact credentials
+                $mail = new PHPMailer(true);
+                try {
+                    $mail->isSMTP();
+                    $mail->Host       = 'smtp.gmail.com';
+                    $mail->SMTPAuth   = true;
+                    $mail->Username   = 'shenux2004@gmail.com'; 
+                    $mail->Password   = 'jooo cxnm ehez mggn'; 
+                    $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+                    $mail->Port       = 587;
+
+                    $mail->setFrom('triangleprinting@gmail.com', 'Triangle Printing Solutions');
+                    $mail->addAddress($customer_email, $customer_name);
+
+                    // 3. Build the Email HTML
+                    $mail->isHTML(true);
+                    $mail->Subject = 'Your Order is Ready for Pickup! - ' . $order_number;
+                    $mail->Body    = "
+                        <div style='font-family: Arial, sans-serif; max-width: 600px; border: 1px solid #eee; padding: 20px;'>
+                            <h2 style='color: #9b59b6;'>Great News! Your Order is Ready.</h2>
+                            <p>Hi $customer_name,</p>
+                            <p>Our team has finished printing and preparing your custom items. Order <strong>$order_number</strong> is now ready for pickup!</p>
+                            <hr>
+                            <p><strong>Pickup Location:</strong> No. 29, Pahalagama, Gampaha, Sri Lanka</p>
+                            <p><strong>Order Number:</strong> $order_number</p>
+                            <hr>
+                            <p>Please bring a copy of this email or your ID when you arrive at the shop.</p>
+                            <p>See you soon,<br><strong>Triangle Printing Team</strong></p>
+                        </div>";
+
+                    $mail->send();
+                    $message .= "<div style='background: #d4edda; color: #155724; padding: 1rem; border-radius: 5px; margin-bottom: 1rem;'>✅ Automated 'Ready for Pickup' email successfully sent to customer!</div>";
+                } catch (Exception $e) {
+                    $message .= "<div style='background: #f8d7da; color: #721c24; padding: 1rem; border-radius: 5px; margin-bottom: 1rem;'>⚠️ Status updated, but email failed to send: " . htmlspecialchars($mail->ErrorInfo) . "</div>";
+                }
+            }
+        }
+    
     }
 }
 

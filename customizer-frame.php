@@ -79,11 +79,11 @@ include 'includes/header.php';
             <div class="tool-section" style="margin-top: 1.5rem;">
                 <label class="tool-label" style="display: block; margin-bottom: 0.75rem; font-weight: 600;">Poster Size</label>
                 <select id="poster-size" class="tool-input" style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
-                    <option value="8x10">8x10 ($25)</option>
-                    <option value="11x14">11x14 ($35)</option>
-                    <option value="16x20">16x20 ($45)</option>
-                    <option value="18x24">18x24 ($55)</option>
-                    <option value="24x36">24x36 ($75)</option>
+                    <option value="8x10">8x10 (LKR 2000)</option>
+                    <option value="11x14">11x14 (LKR 2800)</option>
+                    <option value="16x20">16x20 (LKR 3800)</option>
+                    <option value="18x24">18x24 (LKR 4700)</option>
+                    <option value="24x36">24x36 (LKR 6500)</option>
                 </select>
             </div>
 
@@ -111,7 +111,7 @@ include 'includes/header.php';
 
             <div style="background-color: var(--light-gray); padding: 1rem; border-radius: 0.5rem; margin-bottom: 1.5rem; text-align: center;">
                 <small style="color: var(--text-light);">Price</small>
-                <div style="font-size: 2rem; font-weight: 700; color: var(--primary-red);" id="price-display">$25.00</div>
+                <div style="font-size: 2rem; font-weight: 700; color: var(--primary-red);" id="price-display">LKR 2000.00</div>
                 <small style="color: var(--text-light);">Includes frame & printing</small>
             </div>
 
