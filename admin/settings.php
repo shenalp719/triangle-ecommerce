@@ -50,6 +50,10 @@ require_once '../db.php';
             <a href="products.php" class="<?php echo basename($_SERVER['PHP_SELF']) == 'products.php' ? 'active' : ''; ?>">Products (CRUD)</a>
             <a href="customers.php" class="<?php echo basename($_SERVER['PHP_SELF']) == 'customers.php' ? 'active' : ''; ?>">User Management</a>
             <a href="settings.php" class="<?php echo basename($_SERVER['PHP_SELF']) == 'settings.php' ? 'active' : ''; ?>">System Security</a>
+            
+            <hr style="border-color: #555; margin: 10px 20px;">
+            <a href="system_monitor.php" class="<?php echo basename($_SERVER['PHP_SELF']) == 'system_monitor.php' ? 'active' : ''; ?>">🖥️ System Monitor</a>
+            <a href="database_backup.php" class="<?php echo basename($_SERVER['PHP_SELF']) == 'database_backup.php' ? 'active' : ''; ?>">🗄️ Database Backup</a>
         <?php endif; ?>
         
         <a href="logout.php" style="margin-top: auto; background-color: #c82333;">Logout</a>
