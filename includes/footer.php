@@ -74,6 +74,23 @@
         </svg>
     </button>
 
+    <style>
+        /* Force the Chatbot Widget to be larger */
+        #chatbot-widget {
+            width: 400px !important; 
+            height: 800px !important; 
+            max-height: 85vh !important; 
+            
+        }
+
+        /* Give the message scroll area much more room */
+        #chatbot-messages {
+            height: 100% !important; 
+            max-height: 400px !important; 
+            flex-grow: 1 !important;
+        }
+    </style>
+
     <!-- Core JavaScript -->
     <script src="/triangle-ecommerce/assets/js/app.js"></script>
     <script src="/triangle-ecommerce/assets/js/cart.js"></script>

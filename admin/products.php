@@ -37,26 +37,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_product'])) {
     
     $image_path = null;
     
-    // Process image if an actual file was uploaded without errors
-    if (isset($_FILES['product_image']) && $_FILES['product_image']['error'] === UPLOAD_ERR_OK) {
-        $ext = pathinfo($_FILES['product_image']['name'], PATHINFO_EXTENSION);
-        $filename = uniqid('prod_') . '.' . $ext; 
+    // Check if a file was selected at all
+    if (isset($_FILES['product_image']) && $_FILES['product_image']['name'] !== '') {
         
-        // Define the absolute path
-        $upload_dir = __DIR__ . '/../assets/images/products/';
-        
-        // Automatically create the folders if they do not exist
-        if (!is_dir($upload_dir)) {
-            mkdir($upload_dir, 0777, true);
-        }
-        
-        $destination = $upload_dir . $filename;
-        $db_path = 'assets/images/products/' . $filename; 
+        // If the upload was successful
+        if ($_FILES['product_image']['error'] === UPLOAD_ERR_OK) {
+            $ext = pathinfo($_FILES['product_image']['name'], PATHINFO_EXTENSION);
+            $filename = uniqid('prod_') . '.' . $ext; 
+            
+            // Define the absolute path
+            $upload_dir = __DIR__ . '/../assets/images/products/';
+            
+            // Create folder if it doesn't exist, and capture if it fails
+            if (!is_dir($upload_dir)) {
+                if (!mkdir($upload_dir, 0777, true)) {
+                    $message .= "<div style='background: #f8d7da; color: #721c24; padding: 1rem; border-radius: 5px; margin-bottom: 1rem;'><strong>Error:</strong> Could not create the image folder. Please create 'assets/images/products/' manually inside your triangle-ecommerce folder.</div>";
+                }
+            }
+            
+            $destination = $upload_dir . $filename;
+            $db_path = 'assets/images/products/' . $filename; 
 
-        if (move_uploaded_file($_FILES['product_image']['tmp_name'], $destination)) {
-            $image_path = $db_path;
+            if (move_uploaded_file($_FILES['product_image']['tmp_name'], $destination)) {
+                $image_path = $db_path;
+            } else {
+                $message .= "<div style='background: #f8d7da; color: #721c24; padding: 1rem; border-radius: 5px; margin-bottom: 1rem;'><strong>Error:</strong> Upload failed. The server cannot write to: " . $upload_dir . "</div>";
+            }
         } else {
-            $message = "<div style='background: #f8d7da; color: #721c24; padding: 1rem; border-radius: 5px; margin-bottom: 1rem;'>Error: Could not move file. Check folder permissions.</div>";
+            // THIS CATCHES THE SILENT FAILURES!
+            $uploadErrors = [
+                UPLOAD_ERR_INI_SIZE   => 'The file is larger than the upload limit in php.ini (Usually 2MB).',
+                UPLOAD_ERR_FORM_SIZE  => 'The file is too large for the HTML form.',
+                UPLOAD_ERR_PARTIAL    => 'The file was only partially uploaded.',
+                UPLOAD_ERR_NO_TMP_DIR => 'Missing a temporary folder on the server.',
+                UPLOAD_ERR_CANT_WRITE => 'Failed to write file to disk.',
+                UPLOAD_ERR_EXTENSION  => 'A PHP extension stopped the file upload.'
+            ];
+            $errorCode = $_FILES['product_image']['error'];
+            $errorMsg = isset($uploadErrors[$errorCode]) ? $uploadErrors[$errorCode] : 'Unknown upload error code: ' . $errorCode;
+            $message .= "<div style='background: #f8d7da; color: #721c24; padding: 1rem; border-radius: 5px; margin-bottom: 1rem;'><strong>Image Upload Error:</strong> " . $errorMsg . "</div>";
         }
     }
 
@@ -170,11 +189,11 @@ $products = $conn->query("SELECT * FROM products ORDER BY id DESC");
 
                 <div style="display: flex; gap: 1rem; align-items: center;">
                     <div style="flex: 1;">
-                        <label>Base Price ($)</label>
+                        <label>Base Price (LKR)</label>
                         <input type="number" step="0.01" name="base_price" required value="<?php echo $edit_product ? $edit_product['base_price'] : ''; ?>">
                     </div>
                     
-                    <!-- TEACHER NOTE: New Stock Quantity Input -->
+                    <!-- New Stock Quantity Input -->
                     <div style="flex: 1;">
                         <label>Stock Quantity</label>
                         <input type="number" name="stock_quantity" required min="0" value="<?php echo $edit_product ? $edit_product['stock_quantity'] : '100'; ?>">
@@ -194,7 +213,7 @@ $products = $conn->query("SELECT * FROM products ORDER BY id DESC");
                         <textarea name="description" rows="3"><?php echo $edit_product ? htmlspecialchars($edit_product['description']) : ''; ?></textarea>
                     </div>
                     
-                    <!-- The new Image Upload box -->
+                    <!-- The Image Upload box -->
                     <div style="flex: 1;">
                         <label>Product Image</label>
                         <input type="file" name="product_image" accept="image/*" style="padding: 0.4rem;">
@@ -230,7 +249,7 @@ $products = $conn->query("SELECT * FROM products ORDER BY id DESC");
                         <td>#<?php echo $row['id']; ?></td>
                         <td><strong><?php echo htmlspecialchars($row['name']); ?></strong></td>
                         <td><?php echo htmlspecialchars($row['category']); ?></td>
-                        <td>$<?php echo number_format($row['base_price'], 2); ?></td>
+                        <td>LKR <?php echo number_format($row['base_price'], 2); ?></td>
                         
                         
                         <td>

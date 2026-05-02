@@ -62,7 +62,7 @@ include 'includes/header.php';
                                 <h5 style="margin: 0;"><?php echo htmlspecialchars($item['product_name'] ?? $item['name'] ?? 'Custom Product'); ?></h5>
                                 <p style="margin: 0.25rem 0; color: var(--text-light);">Quantity: <?php echo $item['quantity']; ?></p>
                             </div>
-                            <div style="font-weight: 700; color: var(--primary-red);">$<?php echo number_format(($item['unit_price'] ?? $item['price'] ?? 0) * $item['quantity'], 2); ?></div>
+                            <div style="font-weight: 700; color: var(--primary-red);">LKR<?php echo number_format(($item['unit_price'] ?? $item['price'] ?? 0) * $item['quantity'], 2); ?></div>
                         </div>
                     <?php endwhile; ?>
                 <?php else: ?>
@@ -85,7 +85,7 @@ include 'includes/header.php';
                 
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                     <span>Total Amount:</span>
-                    <strong style="font-size: 1.5rem; color: var(--primary-red);">$<?php echo number_format($order['total_amount'], 2); ?></strong>
+                    <strong style="font-size: 1.5rem; color: var(--primary-red);">LKR<?php echo number_format($order['total_amount'], 2); ?></strong>
                 </div>
             </div>
         </div>

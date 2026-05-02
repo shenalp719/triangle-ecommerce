@@ -33,7 +33,7 @@ if (isset($_SESSION['user_id'])) {
             // Check if there is a tracking number, otherwise say "Not shipped yet"
             $tracking = !empty($row['tracking_number']) ? $row['tracking_number'] : "Not shipped yet";
             
-            $customerContext .= "- Order #: " . $row['order_number'] . " | Status: " . $row['status'] . " | Total: $" . $row['total_amount'] . " | Tracking: " . $tracking . "\n";
+            $customerContext .= "- Order #: " . $row['order_number'] . " | Status: " . $row['status'] . " | Total: LKR " . $row['total_amount'] . " | Tracking: " . $tracking . "\n";
         }
     } else {
         $customerContext = "The customer is logged in, but they have not placed any orders yet.";
@@ -42,7 +42,7 @@ if (isset($_SESSION['user_id'])) {
 }   
 
 // 2. Build the System Prompt      
-$systemPrompt = "You are a support bot for Triangle Printing. Pricing: Posters $25, Mugs $12, T-shirts $18. Delivery 5-7 days. CRITICAL RULES: You DO NOT have the ability to cancel orders, change addresses, or process refunds. If a user asks to cancel an order, politely tell them they must contact a human administrator via email.";
+$systemPrompt = "You are a support bot for Triangle Printing. Pricing: Posters LKR 2,000, Mugs LKR 450, T-shirts LKR 1,000. Delivery 5-7 days. CRITICAL RULES: ALWAYS format prices in Sri Lankan Rupees (LKR). You DO NOT have the ability to cancel orders, change addresses, or process refunds. If a user asks to cancel an order, politely tell them they must contact a human administrator via email.";
 $systemPrompt .= "\n\n" . $customerContext; // We inject the database results here! 
 
 // The Foolproof Payload
@@ -77,9 +77,9 @@ if ($http_code === 200 && isset($result['candidates'][0]['content']['parts'][0][
     // Failsafe logic
     $lowerMsg = strtolower($userMessage);
     if (strpos($lowerMsg, 'price') !== false) {
-        $reply = "Our posters start at $25 and mugs at $12. Which are you interested in?";
+        $reply = "Our posters start at LKR 2,000 and mugs at LKR 450. Which are you interested in?";
     } elseif (strpos($lowerMsg, 'deliver') !== false || strpos($lowerMsg, 'ship') !== false) {
-        $reply = "Shipping takes 5-7 business days for $15, or 2-3 days for $30.";
+        $reply = "Shipping takes 5-7 business days for LKR 500, or 2-3 days for LKR 1,000.";
     } else {
         $reply = "I'm currently in 'offline mode' due to high traffic, but I can still help with pricing and delivery questions!";
     }

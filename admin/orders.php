@@ -187,7 +187,7 @@ if ($view === 'history') {
                     <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                         <div>
                             <h3 style="margin: 0;">Order <?php echo htmlspecialchars($order['order_number']); ?></h3>
-                            <small style="color: #666;">Placed on: <?php echo date('M d, Y', strtotime($order['created_at'])); ?> | Total: $<?php echo number_format($order['total_amount'], 2); ?></small>
+                            <small style="color: #666;">Placed on: <?php echo date('M d, Y', strtotime($order['created_at'])); ?> | Total: LKR <?php echo number_format($order['total_amount'], 2); ?></small>
                             <br>
                             <?php if(!empty($order['stripe_payment_id'])): ?>
                                 <span style="background: #e1e1e1; font-family: monospace; font-size: 0.8rem; padding: 2px 6px; border-radius: 4px; display: inline-block; margin-top: 5px;">
@@ -269,7 +269,7 @@ if ($view === 'history') {
                                         </a>
                                     <?php endif; ?>
                                 </td>
-                                <td>$<?php echo number_format($item['unit_price'], 2); ?></td>
+                                <td>LKR <?php echo number_format($item['unit_price'], 2); ?></td>
                             </tr>
                         <?php endwhile; ?>
                     </table>

@@ -18,7 +18,7 @@ include 'includes/header.php';
                     </div>
             </div>
 
-                <div class="summary-card" style="background: #2a2a2a; padding: 2rem; border-radius: 8px;">
+                <div class="summary-card" style="background: #e2c1c1; padding: 2rem; border-radius: 8px;">
                     <h2 style="margin-top: 0; margin-bottom: 1.5rem;">Order Summary</h2>
                     
                     <div style="display: flex; justify-content: space-between; margin-bottom: 1rem;">

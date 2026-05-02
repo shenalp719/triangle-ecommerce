@@ -164,7 +164,7 @@ include 'includes/header.php';
                                 </div>
                                 <div style="text-align: right;">
                                     <div style="font-size: 1.25rem; font-weight: 700; color: var(--primary-red);">
-                                        $<?php echo number_format($order['total_amount'], 2); ?>
+                                        LKR<?php echo number_format($order['total_amount'], 2); ?>
                                     </div>
                                     <a href="order-details.php?id=<?php echo $order['id']; ?>" style="font-size: 0.85rem;">View Details →</a>
                                 </div>

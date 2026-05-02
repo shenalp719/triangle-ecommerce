@@ -87,15 +87,15 @@ $net_revenue = $gross_revenue - $stripe_fees;
             </div>
             <div class="stat-card" style="border-top-color: #2ecc71;">
                 <h3 style="margin: 0 0 0.5rem 0; color: #666;">Gross Revenue</h3>
-                <p style="margin: 0; font-size: 2rem; font-weight: bold; color: #2ecc71;">$<?php echo number_format($gross_revenue, 2); ?></p>
+                <p style="margin: 0; font-size: 2rem; font-weight: bold; color: #2ecc71;"> LKR <?php echo number_format($gross_revenue, 2); ?></p>
             </div>
             <div class="stat-card" style="border-top-color: #f39c12;">
                 <h3 style="margin: 0 0 0.5rem 0; color: #666;">Stripe Fees (Estimated)</h3>
-                <p style="margin: 0; font-size: 1.5rem; font-weight: bold; color: #f39c12;">-$<?php echo number_format($stripe_fees, 2); ?></p>
+                <p style="margin: 0; font-size: 1.5rem; font-weight: bold; color: #f39c12;"> LKR -<?php echo number_format($stripe_fees, 2); ?></p>
             </div>
             <div class="stat-card" style="border-top-color: #3498db; background-color: #ebf5fb;">
                 <h3 style="margin: 0 0 0.5rem 0; color: #3498db;">Net Revenue</h3>
-                <p style="margin: 0; font-size: 2rem; font-weight: bold; color: #2980b9;">$<?php echo number_format($net_revenue, 2); ?></p>
+                <p style="margin: 0; font-size: 2rem; font-weight: bold; color: #2980b9;"> LKR <?php echo number_format($net_revenue, 2); ?></p>
             </div>
         </div>
     </div>
