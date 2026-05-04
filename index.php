@@ -63,7 +63,7 @@ include 'includes/header.php';
                     <div class="product-category">Frames</div>
                     <h4 class="product-name">Frame Posters</h4>
                     <p style="color: var(--text-light); font-size: 0.9rem;">Upload your image and create a beautiful framed poster.</p>
-                    <div class="product-price">From $25</div>
+                    <div class="product-price">From 2000 LKR</div>
                     <a href="customizer-frame.php" class="btn btn-primary btn-sm btn-block">Customize Now</a>
                 </div>
             </div>
@@ -74,7 +74,7 @@ include 'includes/header.php';
                     <div class="product-category">Drinkware</div>
                     <h4 class="product-name">Custom Mugs</h4>
                     <p style="color: var(--text-light); font-size: 0.9rem;">Add photos, text, or designs to create personalized mugs.</p>
-                    <div class="product-price">From $12</div>
+                    <div class="product-price">From 450 LKR</div>
                     <a href="customizer-mug.php" class="btn btn-primary btn-sm btn-block">Customize Now</a>
                 </div>
             </div>
@@ -85,7 +85,7 @@ include 'includes/header.php';
                     <div class="product-category">Apparel</div>
                     <h4 class="product-name">T-Shirts</h4>
                     <p style="color: var(--text-light); font-size: 0.9rem;">Custom printed t-shirts with your designs and artwork.</p>
-                    <div class="product-price">From $18</div>
+                    <div class="product-price">From 1000 LKR</div>
                     <a href="customizer-shirt.php" class="btn btn-primary btn-sm btn-block">Customize Now</a>
                 </div>
             </div>
@@ -96,7 +96,7 @@ include 'includes/header.php';
                     <div class="product-category">Headwear</div>
                     <h4 class="product-name">Custom Caps</h4>
                     <p style="color: var(--text-light); font-size: 0.9rem;">Embroidered or printed caps for your brand or event.</p>
-                    <div class="product-price">From $15</div>
+                    <div class="product-price">From 500 LKR</div>
                     <a href="customizer-cap.php" class="btn btn-primary btn-sm btn-block">Customize Now</a>
                 </div>
             </div>
